@@ -1,0 +1,5 @@
+{
+  "name": "Arcade AI Hub",
+  "description": "A collection of classic mini-games (Snake, Tetris, 2048, Breakout, Minesweeper, Memory Match, Whack-a-Mole, Space Invaders, Simon Says, Dino Run, Frogger, Reversi, Gomoku) enhanced with witty AI commentary powered by Gemini.",
+  "requestFramePermissions": []
+}
