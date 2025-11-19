@@ -15,6 +15,8 @@ export enum GameType {
   REVERSI = 'REVERSI',
   GOMOKU = 'GOMOKU',
   PIXELJUMP = 'PIXELJUMP',
+  MAHJONG = 'MAHJONG',
+  CUBE = 'CUBE',
   LEADERBOARD = 'LEADERBOARD'
 }
 

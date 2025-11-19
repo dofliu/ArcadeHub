@@ -15,9 +15,11 @@ import FroggerGame from './components/FroggerGame';
 import ReversiGame from './components/ReversiGame';
 import GomokuGame from './components/GomokuGame';
 import PixelJumpGame from './components/PixelJumpGame';
+import MahjongGame from './components/MahjongGame';
+import CubeGame from './components/CubeGame';
 import Leaderboard from './components/Leaderboard';
 import AICommentary from './components/AICommentary';
-import { Gamepad2, Grid3x3, Move, Bomb, BoxSelect, Trophy, User, Volume2, VolumeX, Languages, BrainCircuit, MousePointer2, Rocket, Disc, ArrowUpCircle, Skull, Smile, Zap, Footprints, AlignJustify, CircleDot, Circle, Activity } from 'lucide-react';
+import { Gamepad2, Grid3x3, Move, Bomb, BoxSelect, Trophy, User, Volume2, VolumeX, Languages, BrainCircuit, MousePointer2, Rocket, Disc, ArrowUpCircle, Skull, Smile, Zap, Footprints, AlignJustify, CircleDot, Circle, Activity, Layers, Box } from 'lucide-react';
 import { saveScore } from './services/storageService';
 import { soundService } from './services/soundService';
 import { t } from './i18n';
@@ -114,6 +116,10 @@ function App() {
         return <GomokuGame onGameOver={handleGameOver} language={language} />;
       case GameType.PIXELJUMP:
         return <PixelJumpGame onGameOver={handleGameOver} language={language} />;
+      case GameType.MAHJONG:
+        return <MahjongGame onGameOver={handleGameOver} language={language} />;
+      case GameType.CUBE:
+        return <CubeGame onGameOver={handleGameOver} language={language} />;
       case GameType.LEADERBOARD:
         return <Leaderboard onBack={backToMenu} language={language} />;
       default:
@@ -288,6 +294,8 @@ function App() {
               <GameCard type={GameType.REVERSI} icon={CircleDot} color="from-gray-200 to-gray-600" />
               <GameCard type={GameType.GOMOKU} icon={Circle} color="from-orange-200 to-amber-700" />
               <GameCard type={GameType.PIXELJUMP} icon={Activity} color="from-teal-400 to-cyan-600" />
+              <GameCard type={GameType.MAHJONG} icon={Layers} color="from-amber-200 to-amber-600" />
+              <GameCard type={GameType.CUBE} icon={Box} color="from-blue-400 to-red-500" />
             </div>
           </div>
         ) : (
@@ -311,6 +319,8 @@ function App() {
                      activeGame === GameType.REVERSI ? t('reversiControls', language) :
                      activeGame === GameType.GOMOKU ? t('gomokuControls', language) :
                      activeGame === GameType.PIXELJUMP ? t('pixelJumpControls', language) :
+                     activeGame === GameType.MAHJONG ? t('mahjongControls', language) :
+                     activeGame === GameType.CUBE ? t('cubeControls', language) :
                      t('simonSaysControls', language)
                   }</p>
                </div>

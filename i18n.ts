@@ -55,6 +55,10 @@ const translations = {
     [GameType.GOMOKU + '_desc']: '五子連線，智力對決。',
     [GameType.PIXELJUMP]: '像素跳躍',
     [GameType.PIXELJUMP + '_desc']: '控制小鳥跳躍，穿越水管迷宮。',
+    [GameType.MAHJONG]: '麻將對對碰',
+    [GameType.MAHJONG + '_desc']: '尋找相同牌面，消除所有麻將。',
+    [GameType.CUBE]: '魔術方塊',
+    [GameType.CUBE + '_desc']: '3D 旋轉拼圖，還原六面顏色。',
     // Specific Instructions
     snakeControls: '方向鍵控制移動',
     tetrisControls: '↑旋轉, ←→移動, ↓加速',
@@ -70,6 +74,8 @@ const translations = {
     reversiControls: '點擊放置棋子',
     gomokuControls: '點擊放置棋子',
     pixelJumpControls: '空白鍵或點擊跳躍',
+    mahjongControls: '點擊左右無阻擋的相同牌',
+    cubeControls: '滑鼠拖曳旋轉視角，按鈕轉動層',
   },
   en: {
     appTitle: 'Arcade AI Hub',
@@ -124,6 +130,10 @@ const translations = {
     [GameType.GOMOKU + '_desc']: 'Connect 5 in a row to win.',
     [GameType.PIXELJUMP]: 'Pixel Jump',
     [GameType.PIXELJUMP + '_desc']: 'Jump through pipes, stay afloat!',
+    [GameType.MAHJONG]: 'Mahjong Solitaire',
+    [GameType.MAHJONG + '_desc']: 'Match open pairs to clear the board.',
+    [GameType.CUBE]: 'Rubik\'s Cube',
+    [GameType.CUBE + '_desc']: '3D puzzle, solve the faces.',
     // Specific Instructions
     snakeControls: 'Arrow keys to move',
     tetrisControls: '↑Rotate, ←→Move, ↓Drop',
@@ -139,6 +149,8 @@ const translations = {
     reversiControls: 'Click to place disc',
     gomokuControls: 'Click to place stone',
     pixelJumpControls: 'Space or Click to Jump',
+    mahjongControls: 'Click unblocked pairs to match',
+    cubeControls: 'Drag to rotate view, Buttons to rotate layers',
   }
 };
 
