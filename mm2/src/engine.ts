@@ -88,7 +88,7 @@ export function armorAc(ch: Character): number {
 }
 
 export function defenseOf(ch: Character): number {
-  return 10 + armorAc(ch) + Math.max(0, attrMod(ch.attrs.speed)) + (ch.buffAc || 0) + (ch.blocking ? 4 : 0);
+  return 10 + armorAc(ch) + Math.max(0, attrMod(ch.attrs.speed)) + (ch.buffAc || 0) + (ch.buffSpeed || 0) + (ch.blocking ? 4 : 0);
 }
 
 export function attackBonusOf(ch: Character): number {
@@ -148,6 +148,7 @@ export function newGame(): GameState {
     prevExplore: 'overworld',
     party: [],
     active: 0,
+    townId: 'middlegate',
     gold: 200,
     food: 10,
     day: 1,
@@ -237,8 +238,9 @@ export function enterCell(g: GameState) {
   const portal = map.portals?.[key];
   if (portal) {
     if (portal.toScreen === 'town') {
+      g.townId = portal.town || 'middlegate';
       g.screen = 'town';
-      pushLog(g, '你回到了中央之門。');
+      pushLog(g, `你進入了${portal.label || '城鎮'}。`);
       return;
     }
     const tmap = mapMap[portal.toMap];
@@ -328,6 +330,14 @@ export function castOutside(g: GameState, casterIdx: number, spellId: string, ta
     if (target.hp <= 0) target.condition = 'ok';
     target.hp = Math.min(target.maxHp, target.hp + sp.power + attrMod(caster.attrs[castAttr(caster.classId)]) * 2);
     pushLog(g, `✨ ${caster.name} 對 ${target.name} 施放 ${sp.name}。`);
+  } else if (sp.kind === 'partyHeal') {
+    const amt = sp.power + attrMod(caster.attrs[castAttr(caster.classId)]) * 2;
+    g.party.forEach(p => { if (p.condition === 'ok') p.hp = Math.min(p.maxHp, p.hp + amt); });
+    pushLog(g, `✨ ${caster.name} 施放 ${sp.name}，全隊回復 ${amt} 生命。`);
+  } else if (sp.kind === 'recall') {
+    g.screen = 'town';
+    pushLog(g, `🌀 ${caster.name} 施放 ${sp.name}，傳送回城鎮。`);
+    playSfx(g, 'magic');
   } else if (sp.kind === 'cureDead') {
     target.condition = 'ok';
     target.hp = Math.max(1, Math.floor(target.maxHp / 2));
@@ -358,9 +368,9 @@ export function startCombat(g: GameState, encKey: string, enc: EncounterDef, map
   }
   g.combat = {
     monsters, order: [], turn: 0, round: 1, cell: encKey, mapId,
-    boss: !!enc.boss, awaitingTarget: null,
+    boss: !!enc.boss, bossItem: enc.bossItem, bossFlag: enc.bossFlag, awaitingTarget: null,
   };
-  for (const c of g.party) { c.blocking = false; c.buffAtk = 0; c.buffAc = 0; }
+  for (const c of g.party) { c.blocking = false; c.buffAtk = 0; c.buffAc = 0; c.buffSpeed = 0; }
   buildOrder(g);
   g.screen = 'combat';
   pushLog(g, g.combat.boss ? '⚔ 魔王出現了！' : '⚔ 遭遇怪物！');
@@ -369,7 +379,7 @@ export function startCombat(g: GameState, encKey: string, enc: EncounterDef, map
 }
 
 function speedOf(g: GameState, e: { side: 'party' | 'monster'; idx: number }): number {
-  if (e.side === 'party') return g.party[e.idx].attrs.speed + rnd(3);
+  if (e.side === 'party') return g.party[e.idx].attrs.speed + (g.party[e.idx].buffSpeed || 0) + rnd(3);
   return monsterMap[g.combat!.monsters[e.idx].defId].speed + rnd(3);
 }
 
@@ -520,6 +530,13 @@ export function combatCast(g: GameState, spellId: string, targetIdx: number) {
     if (t.hp <= 0) t.condition = 'ok';
     t.hp = Math.min(t.maxHp, t.hp + sp.power + cm * 2);
     pushLog(g, `✨ ${actor.name} 治療了 ${t.name}。`);
+  } else if (sp.kind === 'partyHeal') {
+    const amt = sp.power + cm * 2;
+    g.party.forEach(p => { if (p.condition === 'ok') p.hp = Math.min(p.maxHp, p.hp + amt); });
+    pushLog(g, `✨ ${actor.name} 施放 ${sp.name}，全隊回復 ${amt} 生命。`);
+  } else if (sp.kind === 'haste') {
+    g.party.forEach(p => { if (p.condition === 'ok') p.buffSpeed = (p.buffSpeed || 0) + sp.power; });
+    pushLog(g, `⚡ ${actor.name} 施放 ${sp.name}，全隊行動加速。`);
   } else if (sp.kind === 'cureDead') {
     const t = g.party[targetIdx] || actor;
     t.condition = 'ok'; t.hp = Math.max(1, Math.floor(t.maxHp / 2));
@@ -611,9 +628,10 @@ function endCombatWin(g: GameState) {
   pushLog(g, `✨ 勝利！獲得 ${totalGold} 金幣、每人 ${share} 經驗。`);
   for (const ch of alive) levelUp(g, ch);
   if (c.boss) {
-    g.flags['boss_dead'] = true;
-    if (!g.backpack.includes('orb_of_time')) g.backpack.push('orb_of_time');
-    pushLog(g, '🏆 墮落守護者被擊敗了！你取得了時光寶珠！');
+    g.flags[c.bossFlag || 'boss_dead'] = true;
+    const reward = c.bossItem || 'orb_of_time';
+    if (!g.backpack.includes(reward)) g.backpack.push(reward);
+    pushLog(g, `🏆 魔王被擊敗了！你取得了${itemMap[reward]?.name || reward}！`);
   }
   g.clearedEncounters = [...g.clearedEncounters, c.cell];
   playSfx(g, 'victory');

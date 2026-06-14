@@ -1,6 +1,6 @@
 // Headless engine smoke test — exercises core flows without the DOM.
 import * as E from '../src/engine';
-import { mapMap, npcMap, HIRELINGS, classMap } from '../src/data/content';
+import { mapMap, npcMap, HIRELINGS, classMap, townMap } from '../src/data/content';
 import { GameState } from '../src/types';
 
 let failures = 0;
@@ -105,7 +105,7 @@ console.log('NPC dialog & side quests:');
 assert(E.npcEntryNode(g, 'elder') === 'start', 'elder offers quest when inactive');
 E.applyDialogAction(g, { giveQuest: 'goblin_threat' });
 assert(E.npcEntryNode(g, 'elder') === 'reminder', 'elder reminds while goblins remain');
-g.clearedEncounters.push('overworld:7,6');
+g.clearedEncounters.push('overworld:5,7');
 assert(E.npcEntryNode(g, 'elder') === 'reward', 'elder offers reward once goblins cleared');
 const goldB = g.gold;
 E.applyDialogAction(g, { completeQuest: 'goblin_threat', giveItem: 'ring_protection' });
@@ -163,6 +163,59 @@ gs.pos = { mapId: 'dungeon1', x: 3, y: 3, dir: 1 };
 gs.screen = 'dungeon';
 E.tryStep(gs, 3, 4);
 assert(gs.sfx.includes('step'), 'movement queues a "step" sfx event');
+
+// 14) Milestone 2 — multi-town, second dungeon boss, new spells
+console.log('Milestone 2 world:');
+const m2 = E.newGame();
+const p3 = [
+  E.makeCharacter(0, 'A', 'human', 'knight'),
+  E.makeCharacter(1, 'B', 'elf', 'sorcerer'),
+  E.makeCharacter(2, 'C', 'gnome', 'cleric'),
+];
+for (const c of p3) { c.level = 14; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp; }
+E.startAdventure(m2, p3);
+// enter Atlantium via its overworld portal
+m2.pos = { mapId: 'overworld', x: 13, y: 2, dir: 1 };
+m2.screen = 'overworld';
+E.enterCell(m2);
+assert(m2.townId === 'atlantium' && m2.screen === 'town', 'stepping on Atlantium portal sets town');
+assert(townMap['atlantium'].shops.includes('arcane_emporium'), 'Atlantium has its advanced magic shop');
+
+// second dungeon boss drops its own artifact (sea_crown), not the orb
+m2.screen = 'dungeon';
+m2.pos = { mapId: 'caverns2', x: 9, y: 7, dir: 1 };
+const seaEnc = mapMap['caverns2'].encounters!['10,7'];
+E.startCombat(m2, 'caverns2:10,7', seaEnc, 'caverns2');
+let guard = 0;
+while (m2.combat && guard++ < 1200) {
+  const a = E.currentActor(m2);
+  if (!a) break;
+  if (a.side === 'party') {
+    const mi = E.firstAliveMonsterIdx(m2);
+    if (mi < 0) break;
+    E.combatAttack(m2, mi);
+  } else break;
+}
+assert(m2.combat === null, 'sea serpent fight terminated');
+if (m2.flags['boss2_dead']) {
+  assert(m2.backpack.includes('sea_crown'), 'sea serpent drops the Crown of the Deep');
+  assert(!m2.backpack.includes('orb_of_time'), 'second boss does not drop the first boss artifact');
+}
+
+// new spells: Town Portal (recall) and Mass Heal (partyHeal)
+console.log('New spells:');
+const m3 = E.newGame();
+const sorc = E.makeCharacter(0, 'M', 'elf', 'sorcerer');
+sorc.level = 10; E.recompute(sorc); sorc.sp = sorc.maxSp; sorc.spells.push('town_portal');
+const prst = E.makeCharacter(1, 'H', 'human', 'cleric');
+prst.level = 10; E.recompute(prst); prst.spells.push('mass_heal');
+E.startAdventure(m3, [sorc, prst]);
+m3.screen = 'dungeon'; m3.pos = { mapId: 'dungeon1', x: 3, y: 3, dir: 1 };
+const okRecall = E.castOutside(m3, 0, 'town_portal', 0);
+assert(okRecall && m3.screen === 'town', 'Town Portal returns the party to town');
+sorc.hp = 1; prst.hp = 1; prst.sp = prst.maxSp;
+E.castOutside(m3, 1, 'mass_heal', 1);
+assert(sorc.hp > 1 && prst.hp > 1, 'Mass Heal restores the whole party');
 
 console.log('\n' + (failures === 0 ? '✅ ALL SIM CHECKS PASSED' : `❌ ${failures} CHECK(S) FAILED`));
 if (failures > 0) process.exit(1);

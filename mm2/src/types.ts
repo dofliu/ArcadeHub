@@ -62,9 +62,9 @@ export interface Spell {
   level: number;
   cost: number;
   target: 'enemy' | 'allEnemies' | 'ally' | 'party' | 'self';
-  kind: 'damage' | 'heal' | 'buffAtk' | 'buffAc' | 'cureDead' | 'light' | 'sleep';
+  kind: 'damage' | 'heal' | 'partyHeal' | 'buffAtk' | 'buffAc' | 'haste' | 'cureDead' | 'light' | 'sleep' | 'recall';
   power: number;
-  element?: 'fire' | 'cold' | 'shock' | 'holy';
+  element?: 'fire' | 'cold' | 'shock' | 'holy' | 'poison' | 'energy';
   usableOutside: boolean;
   desc: string;
 }
@@ -97,7 +97,7 @@ export interface MonsterDef {
   xp: number;
   gold: [number, number];
   spellId?: string;       // monster may cast
-  resist?: Partial<Record<'fire' | 'cold' | 'shock' | 'holy', number>>;
+  resist?: Partial<Record<'fire' | 'cold' | 'shock' | 'holy' | 'poison' | 'energy', number>>;
   boss?: boolean;
   color: string;
   desc: string;
@@ -122,6 +122,7 @@ export interface Character {
   blocking?: boolean;
   buffAtk?: number;
   buffAc?: number;
+  buffSpeed?: number;
 }
 
 // ----- Maps -----
@@ -146,6 +147,8 @@ export interface EncounterDef {
   monsters: { id: string; count: [number, number] }[];
   once?: boolean;
   boss?: boolean;
+  bossItem?: string;   // item granted when this boss is defeated
+  bossFlag?: string;   // flag set when this boss is defeated (default 'boss_dead')
 }
 
 export interface ChestDef {
@@ -166,6 +169,7 @@ export interface Portal {
   to: { x: number; y: number; dir?: Dir };
   label?: string;
   toScreen?: Screen;    // e.g. entering town
+  town?: string;        // town id when toScreen === 'town'
 }
 
 // ----- NPC / Dialog / Quests -----
@@ -239,6 +243,16 @@ export interface ShopDef {
   spells?: string[];    // spell ids taught (magic guild)
 }
 
+// ----- Towns -----
+export interface TownDef {
+  id: string;
+  name: string;
+  nameEn: string;
+  desc: string;
+  shops: string[];      // shop ids available in this town
+  npcs: string[];       // npc ids the player can talk to here
+}
+
 // ----- Combat -----
 export interface CombatMonster {
   uid: number;
@@ -254,6 +268,8 @@ export interface Combat {
   cell: string;
   mapId: string;
   boss: boolean;
+  bossItem?: string;
+  bossFlag?: string;
   awaitingTarget: null | { kind: 'attack' | 'spell'; spellId?: string };
 }
 
@@ -263,6 +279,7 @@ export interface GameState {
   prevExplore: 'overworld' | 'dungeon';
   party: Character[];
   active: number;          // active character index for menus
+  townId: string;          // current/last town id
   gold: number;
   food: number;
   day: number;
