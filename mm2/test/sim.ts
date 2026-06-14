@@ -105,7 +105,7 @@ console.log('NPC dialog & side quests:');
 assert(E.npcEntryNode(g, 'elder') === 'start', 'elder offers quest when inactive');
 E.applyDialogAction(g, { giveQuest: 'goblin_threat' });
 assert(E.npcEntryNode(g, 'elder') === 'reminder', 'elder reminds while goblins remain');
-g.clearedEncounters.push('overworld:5,7');
+g.clearedEncounters.push('overworld:6,10');
 assert(E.npcEntryNode(g, 'elder') === 'reward', 'elder offers reward once goblins cleared');
 const goldB = g.gold;
 E.applyDialogAction(g, { completeQuest: 'goblin_threat', giveItem: 'ring_protection' });
@@ -175,7 +175,7 @@ const p3 = [
 for (const c of p3) { c.level = 14; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp; }
 E.startAdventure(m2, p3);
 // enter Atlantium via its overworld portal
-m2.pos = { mapId: 'overworld', x: 13, y: 2, dir: 1 };
+m2.pos = { mapId: 'overworld', x: 16, y: 2, dir: 1 };
 m2.screen = 'overworld';
 E.enterCell(m2);
 assert(m2.townId === 'atlantium' && m2.screen === 'town', 'stepping on Atlantium portal sets town');
@@ -216,6 +216,58 @@ assert(okRecall && m3.screen === 'town', 'Town Portal returns the party to town'
 sorc.hp = 1; prst.hp = 1; prst.sp = prst.maxSp;
 E.castOutside(m3, 1, 'mass_heal', 1);
 assert(sorc.hp > 1 && prst.hp > 1, 'Mass Heal restores the whole party');
+
+// 15) Milestone 3 — more towns, bounties, ailments, endgame
+console.log('Milestone 3 — towns & bounties:');
+const w = E.newGame();
+const wp = [E.makeCharacter(0, 'A', 'human', 'knight'), E.makeCharacter(1, 'B', 'gnome', 'cleric')];
+for (const c of wp) { c.level = 20; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp; }
+E.startAdventure(w, wp);
+w.screen = 'overworld'; w.pos = { mapId: 'overworld', x: 9, y: 2, dir: 1 }; E.enterCell(w);
+assert(w.townId === 'tundara' && w.screen === 'town', 'Tundara portal sets town');
+w.screen = 'overworld'; w.pos = { mapId: 'overworld', x: 16, y: 11, dir: 1 }; E.enterCell(w);
+assert(w.townId === 'vulcania', 'Vulcania portal sets town');
+assert(townMap['tundara'] && townMap['vulcania'], 'four towns total');
+// bounty quest readiness via clearCell
+E.applyDialogAction(w, { giveQuest: 'bounty_drake' });
+assert(E.npcEntryNode(w, 'vulcania_smith') === 'reminder', 'bounty waits before clear');
+w.clearedEncounters.push('overworld:13,5');
+assert(E.npcEntryNode(w, 'vulcania_smith') === 'reward', 'bounty ready once drake cleared');
+
+console.log('Ailments:');
+const a2 = E.newGame();
+const cl = E.makeCharacter(0, 'C', 'human', 'cleric');
+cl.level = 8; E.recompute(cl); cl.sp = cl.maxSp; cl.spells.push('cure_ailment');
+E.startAdventure(a2, [cl]);
+cl.status = { poison: 3, sleep: 2 };
+E.castOutside(a2, 0, 'cure_ailment', 0);
+assert(!cl.status?.poison && !cl.status?.sleep, 'Cure Ailment clears status');
+cl.status = { poison: 2 };
+a2.backpack.push('antidote');
+E.useConsumable(a2, 'antidote', 0);
+assert(!cl.status?.poison, 'Antidote clears poison');
+
+console.log('Endgame:');
+const e2 = E.newGame();
+const heroes = [0, 1, 2, 3].map(i => E.makeCharacter(i, 'H' + i, 'human', i === 2 ? 'cleric' : 'knight'));
+for (const c of heroes) { c.level = 40; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp; c.equipment.weapon = 'dragon_blade'; }
+E.startAdventure(e2, heroes);
+e2.quests['orb_quest'] = 'complete';
+E.applyDialogAction(e2, { completeQuest: 'caverns_quest' });
+assert(e2.flags['endgame_ready'] === true, 'endgame unlocks when both artifacts returned');
+E.applyDialogAction(e2, { finalBattle: true });
+assert(e2.combat !== null && e2.screen === 'combat', 'final battle starts');
+let fg = 0;
+while (e2.combat && fg++ < 4000) {
+  const a = E.currentActor(e2);
+  if (!a) break;
+  if (a.side === 'party') { const mi = E.firstAliveMonsterIdx(e2); if (mi < 0) break; E.combatAttack(e2, mi); }
+  else break;
+}
+assert(e2.combat === null, 'final battle terminates');
+if (e2.flags['game_won']) {
+  assert(e2.screen === 'victory', 'winning the final battle shows the victory screen');
+}
 
 console.log('\n' + (failures === 0 ? '✅ ALL SIM CHECKS PASSED' : `❌ ${failures} CHECK(S) FAILED`));
 if (failures > 0) process.exit(1);

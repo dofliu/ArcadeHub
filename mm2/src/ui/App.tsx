@@ -163,6 +163,18 @@ export const App: React.FC = () => {
               <Overlay icon={<Skull size={48} className="text-red-500" />} title="全隊覆滅" color="#ef4444"
                 action={<Btn variant="primary" onClick={() => { E.clearSave(); setG(E.newGame()); }}>重新開始</Btn>} />
             )}
+            {g.screen === 'victory' && (
+              <Overlay icon={<Trophy size={48} className="text-mm-gold" />} title="克朗得救了！" color="#e7b53b"
+                action={
+                  <div className="flex flex-col items-center gap-2 max-w-md text-center px-4">
+                    <p className="text-mm-light/80 text-sm">夏特姆殞落，時空恢復秩序。你的隊伍成為克朗永世傳唱的英雄。</p>
+                    <div className="flex gap-2">
+                      <Btn variant="gold" onClick={() => apply(d => { d.screen = 'town'; })}>回到城鎮</Btn>
+                      <Btn variant="primary" onClick={() => { E.clearSave(); setG(E.newGame()); }}>新的冒險</Btn>
+                    </div>
+                  </div>
+                } />
+            )}
           </div>
         )}
 
