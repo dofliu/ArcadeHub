@@ -152,5 +152,17 @@ mage.spells.push('wizard_eye'); mage.sp = 20;
 E.castOutside(g, g.party.indexOf(mage), 'wizard_eye', g.party.indexOf(mage));
 assert(g.flags['wizard_eye'] === true, 'Wizard Eye reveals the automap');
 
+// 13) Engine queues sound-effect events (flushed by the UI, not the engine)
+console.log('Sound queue:');
+const gs = E.newGame();
+assert(gs.sfx.length === 0, 'new game has an empty sfx queue');
+const solo = [E.makeCharacter(0, 'A', 'human', 'knight')];
+for (const c of solo) { c.level = 8; E.recompute(c); c.hp = c.maxHp; }
+E.startAdventure(gs, solo);
+gs.pos = { mapId: 'dungeon1', x: 3, y: 3, dir: 1 };
+gs.screen = 'dungeon';
+E.tryStep(gs, 3, 4);
+assert(gs.sfx.includes('step'), 'movement queues a "step" sfx event');
+
 console.log('\n' + (failures === 0 ? '✅ ALL SIM CHECKS PASSED' : `❌ ${failures} CHECK(S) FAILED`));
 if (failures > 0) process.exit(1);

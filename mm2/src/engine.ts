@@ -122,6 +122,7 @@ export function levelUp(g: GameState, ch: Character) {
     ch.hp = ch.maxHp;
     ch.sp = ch.maxSp;
     pushLog(g, `⭐ ${ch.name} 升到了 ${ch.level} 級！`);
+    playSfx(g, 'levelup');
   }
 }
 
@@ -131,6 +132,10 @@ export function pushLog(g: GameState, m: string) {
 }
 export function toast(g: GameState, m: string) {
   g.messages = [...g.messages, m].slice(-3);
+}
+// Queue a sound-effect event for the UI to play. Engine stays browser-free.
+export function playSfx(g: GameState, name: string) {
+  g.sfx = [...g.sfx, name].slice(-12);
 }
 
 export const hasItem = (g: GameState, id: string) => g.backpack.includes(id);
@@ -158,6 +163,7 @@ export function newGame(): GameState {
     shopId: null,
     log: ['克朗大陸的命運，掌握在你的隊伍手中…'],
     messages: [],
+    sfx: [],
   };
 }
 
@@ -182,6 +188,7 @@ export function recruitHireling(g: GameState, h: { id: string; name: string; rac
   g.party.push(ch);
   g.flags[`hired_${h.id}`] = true;
   pushLog(g, `🤝 ${h.name}（${classMap[h.classId].name}）加入了隊伍！`);
+  playSfx(g, 'recruit');
   return true;
 }
 
@@ -206,12 +213,14 @@ export function tryStep(g: GameState, nx: number, ny: number): boolean {
       g.openedDoors = [...g.openedDoors, `${map.id}:${dkey}`];
       if (door?.flag) g.flags[door.flag] = true;
       pushLog(g, door?.text ? `你開啟了門。${door.text}` : '你開啟了一扇門。');
+      playSfx(g, 'door');
     }
   } else if (!passableTerrain(cell)) {
     return false;
   }
   g.pos.x = nx;
   g.pos.y = ny;
+  playSfx(g, 'step');
   enterCell(g);
   return true;
 }
@@ -268,6 +277,8 @@ function lootChest(g: GameState, gkey: string, chest: ChestDef) {
   }
   pushLog(g, `💰 寶箱：獲得 ${parts.join('、') || '空空如也'}`);
   toast(g, `獲得 ${parts.join('、')}`);
+  playSfx(g, 'chest');
+  if (chest.gold) playSfx(g, 'gold');
 }
 
 // ---------- inventory ----------
@@ -311,6 +322,7 @@ export function castOutside(g: GameState, casterIdx: number, spellId: string, ta
   if (!sp || !sp.usableOutside) return false;
   if (caster.sp < sp.cost) { toast(g, '法力不足'); return false; }
   caster.sp -= sp.cost;
+  if (sp.kind === 'heal' || sp.kind === 'cureDead') playSfx(g, 'heal');
   const target = g.party[targetIdx];
   if (sp.kind === 'heal') {
     if (target.hp <= 0) target.condition = 'ok';
@@ -328,6 +340,7 @@ export function castOutside(g: GameState, casterIdx: number, spellId: string, ta
       g.flags['light'] = true;
       pushLog(g, `✨ ${caster.name} 施放了光亮術。`);
     }
+    playSfx(g, 'magic');
   }
   return true;
 }
@@ -351,6 +364,7 @@ export function startCombat(g: GameState, encKey: string, enc: EncounterDef, map
   buildOrder(g);
   g.screen = 'combat';
   pushLog(g, g.combat.boss ? '⚔ 魔王出現了！' : '⚔ 遭遇怪物！');
+  playSfx(g, 'encounter');
   processUntilPlayer(g);
 }
 
@@ -437,10 +451,12 @@ function applyDamageToMonster(g: GameState, mIdx: number, dmg: number, element?:
 
 function damageChar(g: GameState, ch: Character, dmg: number) {
   ch.hp -= dmg;
+  playSfx(g, 'hurt');
   if (ch.hp <= 0) {
     ch.hp = 0;
     ch.condition = 'unconscious';
     pushLog(g, `💀 ${ch.name} 倒下了！`);
+    playSfx(g, 'down');
   }
 }
 
@@ -454,18 +470,21 @@ export function combatAttack(g: GameState, monsterIdx: number) {
   const hit = d20();
   if (hit === 1) {
     pushLog(g, `${actor.name} 的攻擊落空了。`);
+    playSfx(g, 'attack');
   } else if (hit === 20 || hit + attackBonusOf(actor) >= 10 + def.ac) {
     let dmg = weaponDamageRoll(actor);
     const crit = Math.random() < critChance(actor);
     if (crit || hit === 20) dmg = Math.round(dmg * 2);
     const dealt = applyDamageToMonster(g, monsterIdx, dmg);
     pushLog(g, `${actor.name} ${crit || hit === 20 ? '暴擊' : '命中'} ${def.name}，造成 ${dealt} 傷害。`);
+    playSfx(g, crit || hit === 20 ? 'crit' : 'hit');
     if (classMap[actor.classId].id === 'robber' && Math.random() < 0.5) {
       const g2 = rint(3, 12); g.gold += g2; pushLog(g, `🪙 ${actor.name} 偷取了 ${g2} 金幣。`);
     }
-    if (m.hp <= 0) pushLog(g, `${def.name} 被擊倒！`);
+    if (m.hp <= 0) { pushLog(g, `${def.name} 被擊倒！`); playSfx(g, 'enemy_die'); }
   } else {
     pushLog(g, `${actor.name} 未能突破 ${def.name} 的防禦。`);
+    playSfx(g, 'attack');
   }
   afterPlayerAction(g);
 }
@@ -476,6 +495,7 @@ export function combatCast(g: GameState, spellId: string, targetIdx: number) {
   const sp = spellMap[spellId];
   if (!sp || actor.sp < sp.cost) { toast(g, '法力不足'); return; }
   actor.sp -= sp.cost;
+  playSfx(g, sp.kind === 'heal' || sp.kind === 'cureDead' ? 'heal' : sp.kind === 'damage' ? 'spell' : 'magic');
   const cm = attrMod(actor.attrs[castAttr(actor.classId)]);
   if (sp.kind === 'damage') {
     const base = sp.power + cm * 2;
@@ -596,6 +616,7 @@ function endCombatWin(g: GameState) {
     pushLog(g, '🏆 墮落守護者被擊敗了！你取得了時光寶珠！');
   }
   g.clearedEncounters = [...g.clearedEncounters, c.cell];
+  playSfx(g, 'victory');
   g.combat = null;
   g.screen = g.prevExplore;
 }
@@ -604,6 +625,7 @@ function endCombatLoss(g: GameState) {
   g.combat = null;
   g.screen = 'gameover';
   pushLog(g, '☠ 你的隊伍全滅了…');
+  playSfx(g, 'defeat');
 }
 
 // ---------- dialog / quests ----------
@@ -692,6 +714,7 @@ export function buyItem(g: GameState, itemId: string): boolean {
   g.gold -= def.value;
   g.backpack.push(itemId);
   pushLog(g, `購買了 ${def.name}。`);
+  playSfx(g, 'coin');
   return true;
 }
 export function sellItem(g: GameState, itemId: string): boolean {

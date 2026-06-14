@@ -32,6 +32,18 @@ A complete playthrough loop exercising every major system:
 7. **Inventory & equipment** — weapon/armor/shield/helm/accessory slots, buy & sell.
 8. **Quests & flags**, plus **save/load** to `localStorage`.
 
+### Sound & EGA visuals
+
+- **Synthesized sound effects** (`src/sound.ts`) — no audio assets; Web Audio tones for
+  steps, doors, chests, gold, attacks/crits/hits, spells, heals, hurt/down, level-ups,
+  victory/defeat, recruiting, and more. The pure engine stays browser-free: it queues
+  event names onto `GameState.sfx` and the UI flushes them. A mute toggle sits in the header.
+- **EGA monster sprites** (`src/sprites.ts`) — first step of the EGA visual revival. Monsters
+  in combat now render as hand-drawn 16-colour EGA pixel sprites (rat, kobold, goblin, spider,
+  skeleton, orc, zombie, acolyte, and the boss), with a blob fallback for any not yet drawn.
+  Sprites are pure data, so the rest of the bestiary — and later the dungeon/overworld tiles —
+  can be EGA-ified step by step.
+
 ### NPC dialog trees & quest lines
 
 A fully **data-driven dialog/quest system** (`src/data/content.ts`):
