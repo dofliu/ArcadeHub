@@ -142,7 +142,7 @@ export const TownScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply 
 export function questReady(g: GameState, q: typeof QUESTS[number]): boolean {
   if (g.quests[q.id] !== 'active') return false;
   if (q.itemRequired) return g.backpack.includes(q.itemRequired);
-  if (q.id === 'goblin_threat') return g.clearedEncounters.includes('overworld:5,7');
+  if (q.clearCell) return g.clearedEncounters.includes(q.clearCell);
   return false;
 }
 function npcQuestBadge(g: GameState, npcId: string): 'new' | 'ready' | '' {

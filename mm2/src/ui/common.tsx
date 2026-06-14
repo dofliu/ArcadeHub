@@ -72,8 +72,11 @@ export const PartyBar: React.FC<{
             <span className="font-bold text-mm-light truncate">{c.name}</span>
             <span className="text-mm-light/50">L{c.level}</span>
           </div>
-          <div className="text-mm-light/40 text-[10px] mb-1">
-            {raceMap[c.raceId].name}{classMap[c.classId].name}
+          <div className="text-mm-light/40 text-[10px] mb-1 flex items-center gap-1">
+            <span>{raceMap[c.raceId].name}{classMap[c.classId].name}</span>
+            {(c.status?.poison || 0) > 0 && <span className="text-green-400" title="中毒">☠</span>}
+            {(c.status?.sleep || 0) > 0 && <span className="text-blue-300" title="沉睡">Z</span>}
+            {(c.status?.paralyze || 0) > 0 && <span className="text-yellow-300" title="麻痺">✋</span>}
           </div>
           <Bar value={c.hp} max={c.maxHp} color="bg-red-500" icon={<Heart size={9} className="text-red-400" />} />
           {c.maxSp > 0 && (

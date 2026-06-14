@@ -62,7 +62,7 @@ export interface Spell {
   level: number;
   cost: number;
   target: 'enemy' | 'allEnemies' | 'ally' | 'party' | 'self';
-  kind: 'damage' | 'heal' | 'partyHeal' | 'buffAtk' | 'buffAc' | 'haste' | 'cureDead' | 'light' | 'sleep' | 'recall';
+  kind: 'damage' | 'heal' | 'partyHeal' | 'buffAtk' | 'buffAc' | 'haste' | 'cureDead' | 'cure' | 'light' | 'sleep' | 'recall';
   power: number;
   element?: 'fire' | 'cold' | 'shock' | 'holy' | 'poison' | 'energy';
   usableOutside: boolean;
@@ -98,6 +98,7 @@ export interface MonsterDef {
   gold: [number, number];
   spellId?: string;       // monster may cast
   resist?: Partial<Record<'fire' | 'cold' | 'shock' | 'holy' | 'poison' | 'energy', number>>;
+  inflicts?: { poison?: number; paralyze?: number }; // chance (0..1) to inflict on a hit
   boss?: boolean;
   color: string;
   desc: string;
@@ -123,6 +124,14 @@ export interface Character {
   buffAtk?: number;
   buffAc?: number;
   buffSpeed?: number;
+  status?: Status;
+}
+
+// Status ailments (turn counters).
+export interface Status {
+  poison?: number;
+  sleep?: number;
+  paralyze?: number;
 }
 
 // ----- Maps -----
@@ -149,6 +158,7 @@ export interface EncounterDef {
   boss?: boolean;
   bossItem?: string;   // item granted when this boss is defeated
   bossFlag?: string;   // flag set when this boss is defeated (default 'boss_dead')
+  final?: boolean;     // winning this ends the game (victory screen)
 }
 
 export interface ChestDef {
@@ -205,6 +215,7 @@ export interface DialogAction {
   teachSpell?: string;  // teach to first eligible caster
   openShop?: string;    // shop id
   heal?: boolean;       // temple/inn full heal
+  finalBattle?: boolean;// start the endgame boss fight
   end?: boolean;
 }
 export interface NPCEntry {
@@ -228,6 +239,7 @@ export interface QuestDef {
   hint?: string;
   giver?: string;       // npc id
   itemRequired?: string;// consumed on turn-in
+  clearCell?: string;   // "mapId:x,y" encounter that must be cleared to turn in
   rewardGold: number;
   rewardXp: number;
 }
@@ -259,6 +271,7 @@ export interface CombatMonster {
   defId: string;
   hp: number;
   maxHp: number;
+  status?: Status;
 }
 export interface Combat {
   monsters: CombatMonster[];
@@ -270,6 +283,7 @@ export interface Combat {
   boss: boolean;
   bossItem?: string;
   bossFlag?: string;
+  final?: boolean;
   awaitingTarget: null | { kind: 'attack' | 'spell'; spellId?: string };
 }
 

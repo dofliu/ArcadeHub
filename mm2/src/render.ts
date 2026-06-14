@@ -195,6 +195,15 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
       ctx.fillRect(mx - bw / 2, barY, bw, 5);
       ctx.fillStyle = '#9b2226';
       ctx.fillRect(mx - bw / 2, barY, bw * (m.hp / m.maxHp), 5);
+      // status icons
+      const st = m.status;
+      if (st) {
+        let tag = '';
+        if ((st.poison || 0) > 0) tag += '☠';
+        if ((st.sleep || 0) > 0) tag += 'Z';
+        if ((st.paralyze || 0) > 0) tag += '✋';
+        if (tag) { ctx.fillStyle = '#a7f3d0'; ctx.font = '11px monospace'; ctx.textAlign = 'center'; ctx.fillText(tag, mx, barY - 3); ctx.textAlign = 'start'; }
+      }
     }
   });
   ctx.fillStyle = '#4cc9f0';

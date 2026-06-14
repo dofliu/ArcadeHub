@@ -6,9 +6,9 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 2 — world & systems expansion.** A multi-town world, a second dungeon,
-> and large content tables on top of the Milestone 1 vertical slice. Content stays fully
-> data-driven, so the world keeps growing toward a fuller MM2.
+> Status: **Milestone 3 — full loop.** Four towns, all monsters drawn as EGA sprites, a status
+> ailment system, and a complete endgame (the Sheltem confrontation + victory). Content stays
+> fully data-driven, so the world keeps growing toward a fuller MM2.
 
 ### Faithful-to-MM2 touches
 
@@ -63,6 +63,20 @@ A complete playthrough loop exercising every major system:
   Restore, Smite, Greater Protection, Sunray.
 - **Two new quests** across Atlantium (Crown of the Deep, the Ancient Scroll) that grant gear
   and teach a spell.
+
+### Milestone 3 — more towns, full EGA bestiary, ailments & endgame
+
+- **Four towns** — added **Tundara** (frozen north) and **Vulcania** (volcanic forge) to
+  Middlegate and Atlantium, on an enlarged overworld, each with shops, an NPC and a **bounty
+  quest** (clear a wilderness encounter). Quest turn-ins generalised via `clearCell`.
+- **Every monster now has an EGA sprite** — added bandit, harpy, gargoyle, fire drake, and the
+  final boss Sheltem; the combat blob fallback is no longer used.
+- **Status ailments** — **poison** (damage over time), **sleep** (skip turns, wakes on damage),
+  and **paralyze** (skip turns). Monsters inflict them on hit (spider/ghoul poison, gargoyle &
+  Sheltem paralyze); the Sleep spell now actually sleeps enemies; **Cure Ailment** + **Antidote**
+  remove them; inn/temple/victory clear them. Status shows on the party bar and over monsters.
+- **Endgame** — returning both artifacts unlocks the **Sheltem** confrontation from Middlegate's
+  tavern; defeating him triggers the **victory screen** and an epilogue.
 
 ### NPC dialog trees & quest lines
 

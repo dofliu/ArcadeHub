@@ -153,7 +153,7 @@ export function newGame(): GameState {
     food: 10,
     day: 1,
     backpack: ['healing_potion', 'healing_potion'],
-    pos: { mapId: 'overworld', x: 3, y: 8, dir: 0 },
+    pos: { mapId: 'overworld', x: 3, y: 11, dir: 1 },
     flags: {},
     quests: {},
     clearedEncounters: [],
@@ -312,6 +312,7 @@ export function useConsumable(g: GameState, itemId: string, targetIdx: number): 
     ch.hp = Math.min(ch.maxHp, ch.hp + def.heal);
   }
   if (def.restore) ch.sp = Math.min(ch.maxSp, ch.sp + def.restore);
+  if (itemId === 'antidote' && ch.status) { ch.status.poison = 0; }
   g.backpack.splice(g.backpack.indexOf(itemId), 1);
   pushLog(g, `${ch.name} 使用了 ${def.name}。`);
   return true;
@@ -338,6 +339,10 @@ export function castOutside(g: GameState, casterIdx: number, spellId: string, ta
     g.screen = 'town';
     pushLog(g, `🌀 ${caster.name} 施放 ${sp.name}，傳送回城鎮。`);
     playSfx(g, 'magic');
+  } else if (sp.kind === 'cure') {
+    g.party.forEach(p => { if (p.condition === 'ok') p.status = {}; });
+    pushLog(g, `✨ ${caster.name} 施放 ${sp.name}，解除全隊的異常狀態。`);
+    playSfx(g, 'heal');
   } else if (sp.kind === 'cureDead') {
     target.condition = 'ok';
     target.hp = Math.max(1, Math.floor(target.maxHp / 2));
@@ -363,14 +368,14 @@ export function startCombat(g: GameState, encKey: string, enc: EncounterDef, map
     const n = roll(grp.count);
     for (let i = 0; i < n; i++) {
       const def = monsterMap[grp.id];
-      monsters.push({ uid: uid++, defId: grp.id, hp: def.hp, maxHp: def.hp });
+      monsters.push({ uid: uid++, defId: grp.id, hp: def.hp, maxHp: def.hp, status: {} });
     }
   }
   g.combat = {
     monsters, order: [], turn: 0, round: 1, cell: encKey, mapId,
     boss: !!enc.boss, bossItem: enc.bossItem, bossFlag: enc.bossFlag, awaitingTarget: null,
   };
-  for (const c of g.party) { c.blocking = false; c.buffAtk = 0; c.buffAc = 0; c.buffSpeed = 0; }
+  for (const c of g.party) { c.blocking = false; c.buffAtk = 0; c.buffAc = 0; c.buffSpeed = 0; c.status = {}; }
   buildOrder(g);
   g.screen = 'combat';
   pushLog(g, g.combat.boss ? '⚔ 魔王出現了！' : '⚔ 遭遇怪物！');
@@ -407,6 +412,31 @@ export function firstAliveMonsterIdx(g: GameState): number {
   return g.combat!.monsters.findIndex(m => m.hp > 0);
 }
 
+const POISON_DMG = 5;
+
+// Tick poison for all combatants at the start of a round, then (re)build order.
+function startRound(g: GameState) {
+  const c = g.combat!;
+  for (const ch of g.party) {
+    if (ch.condition === 'ok' && ch.status?.poison) {
+      damageChar(g, ch, POISON_DMG);
+      ch.status.poison -= 1;
+      pushLog(g, `☠ ${ch.name} 受到毒素侵蝕，損失 ${POISON_DMG} 生命。`);
+    }
+  }
+  for (const m of c.monsters) {
+    if (m.hp > 0 && m.status?.poison) {
+      m.hp -= POISON_DMG;
+      m.status.poison -= 1;
+      if (m.hp <= 0) pushLog(g, `${monsterMap[m.defId].name} 因中毒而倒下。`);
+    }
+  }
+  buildOrder(g);
+}
+
+const incapacitated = (s?: { sleep?: number; paralyze?: number }) =>
+  !!s && ((s.sleep || 0) > 0 || (s.paralyze || 0) > 0);
+
 function advance(g: GameState) {
   const c = g.combat!;
   c.turn += 1;
@@ -423,17 +453,34 @@ function advance(g: GameState) {
     // new round
     for (const ch of g.party) ch.blocking = false;
     c.round += 1;
-    buildOrder(g);
+    startRound(g);
   }
 }
 
 export function processUntilPlayer(g: GameState) {
   let guard = 0;
-  while (g.combat && guard++ < 200) {
+  while (g.combat && guard++ < 400) {
     if (checkCombatEnd(g)) return;
     const actor = currentActor(g);
     if (!actor) { advance(g); continue; }
-    if (actor.side === 'party') return; // wait for player input
+    if (actor.side === 'party') {
+      const ch = g.party[actor.idx];
+      if (incapacitated(ch.status)) {
+        const what = (ch.status!.sleep || 0) > 0 ? '沉睡' : '麻痺';
+        if ((ch.status!.sleep || 0) > 0) ch.status!.sleep!--; else ch.status!.paralyze!--;
+        pushLog(g, `${ch.name} ${what}中，無法行動。`);
+        advance(g);
+        continue;
+      }
+      return; // wait for player input
+    }
+    const m = g.combat!.monsters[actor.idx];
+    if (incapacitated(m.status)) {
+      if ((m.status!.sleep || 0) > 0) m.status!.sleep!--; else m.status!.paralyze!--;
+      pushLog(g, `${monsterMap[m.defId].name} 無法行動。`);
+      advance(g);
+      continue;
+    }
     monsterAct(g, actor.idx);
     if (checkCombatEnd(g)) return;
     advance(g);
@@ -456,11 +503,13 @@ function applyDamageToMonster(g: GameState, mIdx: number, dmg: number, element?:
     d = Math.round(d * (1 - (def.resist as any)[element] / 100));
   }
   m.hp -= Math.max(1, d);
+  if (m.status?.sleep) m.status.sleep = 0; // damage wakes sleepers
   return Math.max(1, d);
 }
 
 function damageChar(g: GameState, ch: Character, dmg: number) {
   ch.hp -= dmg;
+  if (ch.status?.sleep) ch.status.sleep = 0; // damage wakes sleepers
   playSfx(g, 'hurt');
   if (ch.hp <= 0) {
     ch.hp = 0;
@@ -512,8 +561,8 @@ export function combatCast(g: GameState, spellId: string, targetIdx: number) {
     if (sp.target === 'allEnemies') {
       c.monsters.forEach((m, i) => {
         if (m.hp > 0) {
-          const dealt = applyDamageToMonster(g, i, base + rnd(5), sp.element);
-          void dealt;
+          applyDamageToMonster(g, i, base + rnd(5), sp.element);
+          if (sp.element === 'poison') { m.status = m.status || {}; m.status.poison = Math.max(m.status.poison || 0, 3); }
         }
       });
       pushLog(g, `🔮 ${actor.name} 施放 ${sp.name}，席捲全體敵人！`);
@@ -522,6 +571,7 @@ export function combatCast(g: GameState, spellId: string, targetIdx: number) {
       const i = valid ? targetIdx : firstAliveMonsterIdx(g);
       if (i >= 0) {
         const dealt = applyDamageToMonster(g, i, base + rnd(5), sp.element);
+        if (sp.element === 'poison') { const m = c.monsters[i]; m.status = m.status || {}; m.status.poison = Math.max(m.status.poison || 0, 3); }
         pushLog(g, `🔮 ${actor.name} 對 ${monsterMap[c.monsters[i].defId].name} 施放 ${sp.name}，造成 ${dealt} 傷害。`);
       }
     }
@@ -548,7 +598,18 @@ export function combatCast(g: GameState, spellId: string, targetIdx: number) {
     g.party.forEach(p => { if (p.condition === 'ok') p.buffAc = (p.buffAc || 0) + sp.power; });
     pushLog(g, `🛡 ${actor.name} 施放 ${sp.name}，全隊防禦提升。`);
   } else if (sp.kind === 'sleep') {
-    pushLog(g, `💤 ${actor.name} 施放睡眠術。`);
+    let n = 0;
+    c.monsters.forEach(m => {
+      if (m.hp > 0 && !monsterMap[m.defId].boss && Math.random() < 0.65) {
+        m.status = m.status || {};
+        m.status.sleep = Math.max(m.status.sleep || 0, 3);
+        n++;
+      }
+    });
+    pushLog(g, n > 0 ? `💤 ${actor.name} 施放 ${sp.name}，${n} 隻敵人陷入沉睡。` : `💤 ${actor.name} 的睡眠術被抵抗了。`);
+  } else if (sp.kind === 'cure') {
+    g.party.forEach(p => { if (p.condition === 'ok') p.status = {}; });
+    pushLog(g, `✨ ${actor.name} 施放 ${sp.name}，解除全隊的異常狀態。`);
   }
   afterPlayerAction(g);
 }
@@ -608,6 +669,18 @@ function monsterAct(g: GameState, mIdx: number) {
     const dmg = roll(def.dmg);
     damageChar(g, target.p, dmg);
     pushLog(g, `${def.name} 攻擊 ${target.p.name}，造成 ${dmg} 傷害。`);
+    // chance to inflict an ailment
+    if (def.inflicts && target.p.condition === 'ok') {
+      target.p.status = target.p.status || {};
+      if (def.inflicts.poison && Math.random() < def.inflicts.poison) {
+        target.p.status.poison = Math.max(target.p.status.poison || 0, 3);
+        pushLog(g, `☠ ${target.p.name} 中毒了！`);
+      }
+      if (def.inflicts.paralyze && Math.random() < def.inflicts.paralyze) {
+        target.p.status.paralyze = Math.max(target.p.status.paralyze || 0, 2);
+        pushLog(g, `✋ ${target.p.name} 被麻痺了！`);
+      }
+    }
   } else {
     pushLog(g, `${target.p.name} 擋下了 ${def.name} 的攻擊。`);
   }
@@ -623,20 +696,32 @@ function endCombatWin(g: GameState) {
   }
   const alive = aliveParty(g);
   const share = Math.max(1, Math.floor(totalXp / Math.max(1, alive.length)));
-  for (const ch of alive) { ch.xp += share; ch.buffAtk = 0; ch.buffAc = 0; ch.blocking = false; }
+  for (const ch of alive) { ch.xp += share; }
+  // clear transient combat state / ailments for the whole party
+  for (const ch of g.party) { ch.buffAtk = 0; ch.buffAc = 0; ch.buffSpeed = 0; ch.blocking = false; ch.status = {}; }
   g.gold += totalGold;
   pushLog(g, `✨ 勝利！獲得 ${totalGold} 金幣、每人 ${share} 經驗。`);
   for (const ch of alive) levelUp(g, ch);
+  const isFinal = c.final;
   if (c.boss) {
     g.flags[c.bossFlag || 'boss_dead'] = true;
-    const reward = c.bossItem || 'orb_of_time';
-    if (!g.backpack.includes(reward)) g.backpack.push(reward);
-    pushLog(g, `🏆 魔王被擊敗了！你取得了${itemMap[reward]?.name || reward}！`);
+    if (c.bossItem) {
+      if (!g.backpack.includes(c.bossItem)) g.backpack.push(c.bossItem);
+      pushLog(g, `🏆 魔王被擊敗了！你取得了${itemMap[c.bossItem]?.name || c.bossItem}！`);
+    } else {
+      pushLog(g, '🏆 魔王被擊敗了！');
+    }
   }
   g.clearedEncounters = [...g.clearedEncounters, c.cell];
   playSfx(g, 'victory');
   g.combat = null;
-  g.screen = g.prevExplore;
+  if (isFinal) {
+    g.flags['game_won'] = true;
+    g.screen = 'victory';
+    pushLog(g, '🌟 夏特姆被擊敗，克朗大陸的時空徹底安定了！');
+  } else {
+    g.screen = g.prevExplore;
+  }
 }
 
 function endCombatLoss(g: GameState) {
@@ -704,6 +789,10 @@ export function applyDialogAction(g: GameState, action: DialogAction) {
       for (const ch of alive) { ch.xp += share; levelUp(g, ch); }
       g.flags[`${q.id}_done`] = true;
       if (q.id === 'orb_quest') g.flags['orb_returned'] = true;
+      // both main artifacts returned -> unlock the endgame
+      if (g.quests['orb_quest'] === 'complete' && g.quests['caverns_quest'] === 'complete') {
+        g.flags['endgame_ready'] = true;
+      }
       pushLog(g, `🏆 任務完成：${q.name}！獲得 ${q.rewardGold} 金幣與 ${q.rewardXp} 經驗。`);
     }
   }
@@ -712,6 +801,7 @@ export function applyDialogAction(g: GameState, action: DialogAction) {
   if (action.giveItem) { g.backpack.push(action.giveItem); pushLog(g, `獲得 ${itemMap[action.giveItem]?.name || action.giveItem}。`); }
   if (action.giveGold) g.gold += action.giveGold;
   if (action.heal) restPartyFull(g);
+  if (action.finalBattle) startFinalBattle(g);
 }
 
 export function restPartyFull(g: GameState) {
@@ -720,8 +810,19 @@ export function restPartyFull(g: GameState) {
       ch.condition = 'ok';
       ch.hp = ch.maxHp;
       ch.sp = ch.maxSp;
+      ch.status = {};
     }
   }
+}
+
+// ---------- endgame ----------
+export function startFinalBattle(g: GameState) {
+  g.dialog = null;
+  g.prevExplore = 'overworld';
+  startCombat(g, 'final:sheltem', {
+    monsters: [{ id: 'sheltem', count: [1, 1] }],
+    once: true, boss: true, final: true, bossFlag: 'sheltem_dead',
+  }, g.pos.mapId);
 }
 
 // ---------- shops ----------
