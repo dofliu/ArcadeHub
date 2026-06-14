@@ -1,0 +1,267 @@
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { GameState } from '../types';
+import * as E from '../engine';
+import { mapMap, questMap } from '../data/content';
+import { drawDungeon, drawOverworld, drawCombat, drawTitle, CW, CH } from '../render';
+import { Btn, Panel, PartyBar } from './common';
+import {
+  CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen,
+} from './screens';
+import {
+  ArrowUp, ArrowDown, RotateCcw, RotateCw, ArrowLeft, ArrowRight, Save, FolderOpen,
+  Coins, CalendarDays, Backpack, Skull, Trophy, ScrollText,
+} from 'lucide-react';
+
+const DIRV = [
+  { x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 },
+];
+
+export const App: React.FC = () => {
+  const [g, setG] = useState<GameState>(() => E.newGame());
+  const [sheetActive, setSheetActive] = useState(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const apply = useCallback((fn: (d: GameState) => void) => {
+    setG(prev => { const d = E.clone(prev); fn(d); return d; });
+  }, []);
+
+  // ----- movement -----
+  const move = useCallback((forward: boolean) => {
+    apply(d => {
+      if (d.screen === 'dungeon') {
+        const v = DIRV[d.pos.dir];
+        E.tryStep(d, d.pos.x + (forward ? v.x : -v.x), d.pos.y + (forward ? v.y : -v.y));
+      }
+    });
+  }, [apply]);
+
+  const turn = useCallback((delta: number) => {
+    apply(d => { if (d.screen === 'dungeon') E.turnDir(d, delta); });
+  }, [apply]);
+
+  const moveOver = useCallback((dir: number) => {
+    apply(d => {
+      if (d.screen === 'overworld') {
+        d.pos.dir = dir as 0 | 1 | 2 | 3;
+        const v = DIRV[dir];
+        E.tryStep(d, d.pos.x + v.x, d.pos.y + v.y);
+      }
+    });
+  }, [apply]);
+
+  // ----- keyboard -----
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (g.screen === 'dungeon') {
+        if (e.key === 'ArrowUp') { e.preventDefault(); move(true); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); move(false); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); turn(-1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); turn(1); }
+      } else if (g.screen === 'overworld') {
+        const map: Record<string, number> = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 };
+        if (e.key in map) { e.preventDefault(); moveOver(map[e.key]); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [g.screen, move, turn, moveOver]);
+
+  // ----- canvas -----
+  useEffect(() => {
+    const cv = canvasRef.current;
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return;
+    if (g.screen === 'combat') drawCombat(ctx, g);
+    else if (g.screen === 'dungeon') drawDungeon(ctx, g);
+    else if (g.screen === 'overworld') drawOverworld(ctx, g);
+    else drawTitle(ctx);
+  }, [g]);
+
+  const showCanvas = ['title', 'overworld', 'dungeon', 'combat', 'victory', 'gameover'].includes(g.screen);
+  const isExplore = g.screen === 'overworld' || g.screen === 'dungeon';
+  const orbDone = g.flags['orb_returned'];
+
+  // victory screen trigger: orb returned and back in town -> show banner via flag (kept simple)
+  return (
+    <div className="min-h-screen flex flex-col items-center p-3 md:p-6">
+      {/* Header */}
+      <header className="w-full max-w-4xl flex items-center gap-3 mb-3">
+        <h1 className="font-rune text-lg md:text-xl text-mm-gold">魔法門 III · 泰拉群島</h1>
+        {g.party.length > 0 && (
+          <div className="flex items-center gap-3 text-sm ml-2">
+            <span className="flex items-center gap-1 text-mm-gold"><Coins size={14} />{g.gold}</span>
+            <span className="flex items-center gap-1 text-mm-light/60"><CalendarDays size={14} />第{g.day}天</span>
+          </div>
+        )}
+        <div className="ml-auto flex gap-2">
+          {g.party.length > 0 && g.screen !== 'create' && (
+            <>
+              <Btn onClick={() => { setSheetActive(0); apply(d => { d.screen = 'sheet'; }); }} title="角色與背包"><Backpack size={16} /></Btn>
+              <Btn onClick={() => apply(d => E.saveGame(d))} title="存檔"><Save size={16} /></Btn>
+            </>
+          )}
+          {E.hasSave() && (
+            <Btn onClick={() => { const s = E.loadGame(); if (s) setG(s); }} title="讀檔"><FolderOpen size={16} /></Btn>
+          )}
+        </div>
+      </header>
+
+      {/* Toasts */}
+      {g.messages.length > 0 && (
+        <div className="w-full max-w-4xl mb-2 space-y-1">
+          {g.messages.map((m, i) => (
+            <div key={i} className="text-center text-sm text-mm-gold bg-mm-panel/80 border border-mm-gold/30 rounded py-1">{m}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Main */}
+      <main className="w-full max-w-4xl flex flex-col items-center gap-3">
+        {showCanvas && (
+          <div className="relative">
+            <canvas ref={canvasRef} width={CW} height={CH} className="rounded-lg border-2 border-mm-edge shadow-2xl bg-black max-w-full" />
+            {g.screen === 'dungeon' && (
+              <div className="absolute top-2 right-2 bg-black/60 p-1 rounded border border-mm-edge">
+                <AutoMap g={g} />
+                <div className="text-center text-[10px] text-mm-neon mt-0.5">{['北', '東', '南', '西'][g.pos.dir]}</div>
+              </div>
+            )}
+            {isExplore && (
+              <div className="absolute bottom-2 left-2 text-[11px] text-mm-light/70 bg-black/50 px-2 py-0.5 rounded">
+                {mapMap[g.pos.mapId].name}
+              </div>
+            )}
+            {g.screen === 'gameover' && (
+              <Overlay icon={<Skull size={48} className="text-red-500" />} title="全隊覆滅" color="#ef4444"
+                action={<Btn variant="primary" onClick={() => { E.clearSave(); setG(E.newGame()); }}>重新開始</Btn>} />
+            )}
+          </div>
+        )}
+
+        {/* Title */}
+        {g.screen === 'title' && (
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-mm-light/60 text-sm text-center max-w-md">
+              一款向《Might &amp; Magic III: Isles of Terra》致敬的獨立第一人稱地城 RPG。組建隊伍、探索地城、討伐巫妖王、取回泰拉星界寶珠。
+            </p>
+            <div className="flex gap-3">
+              <Btn variant="primary" className="px-8 py-2" onClick={() => apply(d => { d.screen = 'create'; })}>新的冒險</Btn>
+              {E.hasSave() && <Btn variant="gold" className="px-6 py-2" onClick={() => { const s = E.loadGame(); if (s) setG(s); }}>繼續遊戲</Btn>}
+            </div>
+          </div>
+        )}
+
+        {g.screen === 'create' && <CreateScreen apply={apply} />}
+        {g.screen === 'town' && <TownScreen g={g} apply={apply} />}
+        {g.screen === 'shop' && <ShopScreen g={g} apply={apply} />}
+        {g.screen === 'dialog' && <DialogScreen g={g} apply={apply} />}
+        {g.screen === 'sheet' && <SheetScreen g={g} apply={apply} active={sheetActive} setActive={setSheetActive} />}
+        {g.screen === 'combat' && <CombatPanel g={g} apply={apply} />}
+
+        {/* Explore movement controls */}
+        {isExplore && (
+          <div className="flex items-center gap-6">
+            {g.screen === 'dungeon' ? (
+              <div className="grid grid-cols-3 gap-2">
+                <span />
+                <CtrlBtn onClick={() => move(true)}><ArrowUp /></CtrlBtn>
+                <span />
+                <CtrlBtn onClick={() => turn(-1)}><RotateCcw /></CtrlBtn>
+                <CtrlBtn onClick={() => move(false)}><ArrowDown /></CtrlBtn>
+                <CtrlBtn onClick={() => turn(1)}><RotateCw /></CtrlBtn>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                <span />
+                <CtrlBtn onClick={() => moveOver(0)}><ArrowUp /></CtrlBtn>
+                <span />
+                <CtrlBtn onClick={() => moveOver(3)}><ArrowLeft /></CtrlBtn>
+                <CtrlBtn onClick={() => moveOver(2)}><ArrowDown /></CtrlBtn>
+                <CtrlBtn onClick={() => moveOver(1)}><ArrowRight /></CtrlBtn>
+              </div>
+            )}
+            <div className="text-xs text-mm-light/40 max-w-[120px]">
+              {g.screen === 'dungeon' ? '↑前進 ↓後退 ←→轉向' : '方向鍵移動'}
+            </div>
+          </div>
+        )}
+
+        {/* Party bar */}
+        {g.party.length > 0 && ['overworld', 'dungeon', 'combat', 'town', 'shop', 'dialog'].includes(g.screen) && (
+          <PartyBar g={g} highlight={g.screen === 'combat' ? E.currentActor(g)?.idx : undefined}
+            onSelect={(i) => { setSheetActive(i); apply(d => { d.screen = 'sheet'; }); }} />
+        )}
+
+        {/* Quest tracker */}
+        {g.quests['orb_quest'] && g.quests['orb_quest'] !== 'complete' && ['town', 'overworld', 'dungeon'].includes(g.screen) && (
+          <Panel className="w-full text-xs">
+            <div className="flex items-center gap-1 text-mm-gold"><ScrollText size={13} /> {questMap['orb_quest'].name}</div>
+            <div className="text-mm-light/60 mt-0.5">
+              {E.hasItem(g, 'orb_of_terra') ? '✓ 已取得寶珠！回索皮加城酒館交付任務。' : questMap['orb_quest'].desc}
+            </div>
+          </Panel>
+        )}
+        {orbDone && g.screen === 'town' && (
+          <Panel className="w-full text-center">
+            <Trophy className="inline text-mm-gold mb-1" size={32} />
+            <div className="font-rune text-mm-gold text-lg">泰拉群島重歸光明！</div>
+            <div className="text-mm-light/60 text-sm">你完成了主線任務。感謝遊玩這個 Milestone 1 垂直切片。</div>
+          </Panel>
+        )}
+
+        {/* Log */}
+        {g.party.length > 0 && (
+          <Panel className="w-full max-h-28 overflow-auto text-[11px] text-mm-light/70 leading-snug">
+            {g.log.slice(-8).map((m, i, arr) => (
+              <div key={i} className={i === arr.length - 1 ? 'text-mm-light' : ''}>{m}</div>
+            ))}
+          </Panel>
+        )}
+      </main>
+
+      <footer className="text-mm-light/30 text-xs mt-6">
+        Original tribute · not affiliated with the Might &amp; Magic franchise.
+      </footer>
+    </div>
+  );
+};
+
+const CtrlBtn: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => (
+  <button onClick={onClick} className="p-3 bg-mm-panel border border-mm-edge rounded-lg active:bg-mm-arcane hover:bg-mm-edge transition flex justify-center">
+    {children}
+  </button>
+);
+
+const Overlay: React.FC<{ icon: React.ReactNode; title: string; color: string; action?: React.ReactNode }> = ({ icon, title, color, action }) => (
+  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 rounded-lg gap-3">
+    {icon}
+    <div className="font-rune text-2xl" style={{ color }}>{title}</div>
+    {action}
+  </div>
+);
+
+// Dungeon automap (SVG)
+const AutoMap: React.FC<{ g: GameState }> = ({ g }) => {
+  const map = mapMap[g.pos.mapId];
+  const grid = map.grid;
+  const cell = 10;
+  return (
+    <svg width={grid[0].length * cell} height={grid.length * cell}>
+      {grid.map((row, y) =>
+        row.split('').map((ch, x) => {
+          const key = `${x},${y}`;
+          const gkey = `${map.id}:${key}`;
+          let fill = '#0c0913';
+          if (ch === '#') fill = '#3a2f5c';
+          else if (map.doors?.[key]) fill = g.openedDoors.includes(gkey) ? '#2a2440' : '#5a3e8c';
+          else if (map.portals?.[key]) fill = '#4cc9f0';
+          else if (map.chests?.[key] && !g.lootedChests.includes(gkey)) fill = '#e7b53b';
+          else fill = '#221c38';
+          return <rect key={key} x={x * cell} y={y * cell} width={cell - 1} height={cell - 1} fill={fill} />;
+        })
+      )}
+      <rect x={g.pos.x * cell + 1.5} y={g.pos.y * cell + 1.5} width={cell - 4} height={cell - 4} fill="#fff" />
+    </svg>
+  );
+};
