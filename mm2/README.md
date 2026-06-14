@@ -6,8 +6,9 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 1 — playable vertical slice.** The engine and all core systems are in
-> place and content is data-driven, so the world can keep being expanded in later milestones.
+> Status: **Milestone 2 — world & systems expansion.** A multi-town world, a second dungeon,
+> and large content tables on top of the Milestone 1 vertical slice. Content stays fully
+> data-driven, so the world keeps growing toward a fuller MM2.
 
 ### Faithful-to-MM2 touches
 
@@ -43,6 +44,25 @@ A complete playthrough loop exercising every major system:
   skeleton, orc, zombie, acolyte, and the boss), with a blob fallback for any not yet drawn.
   Sprites are pure data, so the rest of the bestiary — and later the dungeon/overworld tiles —
   can be EGA-ified step by step.
+
+### Milestone 2 — world & systems expansion
+
+- **Multi-town world (data-driven)** — towns are now a `TownDef` table. Two towns:
+  **Middlegate** (starter) and **Atlantium** (advanced shops & high-tier spells). Adding a
+  town is pure data; the hub renders its shops/NPCs from `townMap[townId]`.
+- **A second 2-level dungeon** — the **Sunken Caverns**, gated by a Rune Key, ending in the
+  **Sea Serpent** boss who guards the Crown of the Deep. Boss rewards/flags are now per-encounter
+  (`bossItem`/`bossFlag`), so each boss drops its own artifact.
+- **Bigger overworld** connecting both towns and both dungeons, with wilderness encounters.
+- **~12 new monsters** (bandit, wolf, ghoul, harpy, ogre, gargoyle, troll, witch, dark knight,
+  minotaur, fire drake, sea serpent), several with new EGA sprites.
+- **~20 new items** — weapons (spear → dragon blade), armors (ring → dragon plate), shields,
+  helms, rings/cloaks, and consumables (antidote, elixir, greater mana).
+- **~12 new spells**, including utility: **Town Portal** (recall to town), **Mass Heal**
+  (party heal), **Haste** (party speed/AC), plus Acid Spray, Energy Blast, Ice Storm, Meteor,
+  Restore, Smite, Greater Protection, Sunray.
+- **Two new quests** across Atlantium (Crown of the Deep, the Ancient Scroll) that grant gear
+  and teach a spell.
 
 ### NPC dialog trees & quest lines
 

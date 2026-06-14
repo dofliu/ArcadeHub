@@ -3,7 +3,7 @@ import { Character, EquipSlot, GameState } from '../types';
 import * as E from '../engine';
 import {
   RACES, CLASSES, raceMap, classMap, spellMap, itemMap, monsterMap, npcMap, questMap, shopMap, SHOPS,
-  TOWN_NPCS, QUESTS, HIRELINGS,
+  QUESTS, HIRELINGS, townMap,
 } from '../data/content';
 import { Btn, Panel, Bar, PartyBar, charLabel } from './common';
 import {
@@ -76,20 +76,19 @@ export const CreateScreen: React.FC<{ apply: Apply }> = ({ apply }) => {
 };
 
 // ============ Town Hub ============
+const shopIcon = (id: string) => (shopMap[id]?.kind === 'magic' ? Wand2 : Store);
+
 export const TownScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply }) => {
+  const town = townMap[g.townId] || townMap['middlegate'];
   const buildings = [
-    { id: 'weapon_smith', label: '武器鋪', icon: Swords, kind: 'shop' },
-    { id: 'armorer', label: '防具鋪', icon: Shield, kind: 'shop' },
-    { id: 'magic_guild', label: '魔法公會', icon: Wand2, kind: 'shop' },
-    { id: 'temple', label: '神殿', icon: Cross, kind: 'temple' },
-    { id: 'inn', label: '旅店', icon: BedDouble, kind: 'inn' },
-    { id: 'tavern_keeper', label: '酒館', icon: Beer, kind: 'dialog' },
-    { id: 'hire', label: '雇用幫手', icon: UserPlus, kind: 'hire' },
+    ...town.shops.map(id => ({ id, label: shopMap[id].name, icon: shopIcon(id), kind: 'shop' as const })),
+    { id: 'temple', label: '神殿', icon: Cross, kind: 'temple' as const },
+    { id: 'inn', label: '旅店', icon: BedDouble, kind: 'inn' as const },
+    { id: 'hire', label: '雇用幫手', icon: UserPlus, kind: 'hire' as const },
   ];
   const enter = (b: { id: string; kind: string }) => {
     if (b.kind === 'shop') apply(d => { d.shopId = b.id; d.screen = 'shop'; });
     else if (b.kind === 'hire') apply(d => { d.screen = 'hire'; });
-    else if (b.kind === 'dialog') apply(d => { d.dialog = { npcId: b.id, node: E.npcEntryNode(d, b.id) }; d.screen = 'dialog'; });
     else if (b.kind === 'temple') apply(d => {
       const cost = 30;
       if (d.gold < cost) { E.toast(d, '金幣不足（需 30）'); return; }
@@ -101,8 +100,8 @@ export const TownScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply 
   };
   return (
     <div className="w-full max-w-3xl text-center">
-      <h2 className="font-rune text-2xl text-mm-gold mb-1">中央之門 Middlegate</h2>
-      <p className="text-mm-light/50 text-sm mb-4">克朗大陸上最後的安全據點。</p>
+      <h2 className="font-rune text-2xl text-mm-gold mb-1">{town.name}</h2>
+      <p className="text-mm-light/50 text-sm mb-4">{town.desc}</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {buildings.map(b => (
           <button key={b.id} onClick={() => enter(b)}
@@ -117,7 +116,7 @@ export const TownScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply 
       <div className="mt-4">
         <div className="flex items-center justify-center gap-1 text-mm-light/50 text-xs mb-2"><Users size={13} /> 城鎮居民</div>
         <div className="flex flex-wrap gap-2 justify-center">
-          {TOWN_NPCS.map(id => {
+          {town.npcs.map(id => {
             const badge = npcQuestBadge(g, id);
             return (
               <Btn key={id} onClick={() => apply(d => { d.dialog = { npcId: id, node: E.npcEntryNode(d, id) }; d.screen = 'dialog'; })}>
@@ -140,15 +139,18 @@ export const TownScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply 
 };
 
 // quest indicator for an NPC: 'new' = has a quest to give, 'ready' = active quest ready to turn in
+export function questReady(g: GameState, q: typeof QUESTS[number]): boolean {
+  if (g.quests[q.id] !== 'active') return false;
+  if (q.itemRequired) return g.backpack.includes(q.itemRequired);
+  if (q.id === 'goblin_threat') return g.clearedEncounters.includes('overworld:5,7');
+  return false;
+}
 function npcQuestBadge(g: GameState, npcId: string): 'new' | 'ready' | '' {
   const q = QUESTS.find(qq => qq.giver === npcId);
   if (!q) return '';
   const st = g.quests[q.id];
   if (!st || st === 'inactive') return 'new';
-  if (st === 'active') {
-    if (q.itemRequired) return g.backpack.includes(q.itemRequired) ? 'ready' : '';
-    if (q.id === 'goblin_threat') return g.clearedEncounters.includes('overworld:7,6') ? 'ready' : '';
-  }
+  if (st === 'active') return questReady(g, q) ? 'ready' : '';
   return '';
 }
 
@@ -191,9 +193,7 @@ export const HireScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply 
 export const QuestLogScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply }) => {
   const active = QUESTS.filter(q => g.quests[q.id] === 'active');
   const done = QUESTS.filter(q => g.quests[q.id] === 'complete');
-  const ready = (q: typeof QUESTS[number]) =>
-    g.quests[q.id] === 'active' && (q.itemRequired ? g.backpack.includes(q.itemRequired)
-      : q.id === 'goblin_threat' ? g.clearedEncounters.includes('overworld:7,6') : false);
+  const ready = (q: typeof QUESTS[number]) => questReady(g, q);
   return (
     <div className="w-full max-w-xl">
       <div className="flex items-center mb-3">
@@ -547,7 +547,7 @@ export const SheetScreen: React.FC<{ g: GameState; apply: Apply; active: number;
                     {sp.usableOutside && (sp.kind === 'heal' || sp.kind === 'cureDead') && (
                       <CastOutsideBtn g={g} apply={apply} casterIdx={active} spellId={sid} />
                     )}
-                    {sp.usableOutside && sp.kind === 'light' && (
+                    {sp.usableOutside && (sp.kind === 'light' || sp.kind === 'recall' || sp.kind === 'partyHeal') && (
                       <Btn onClick={() => apply(d => E.castOutside(d, active, sid, active))}>施放</Btn>
                     )}
                   </div>

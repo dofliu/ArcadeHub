@@ -1,7 +1,7 @@
 // ===== All game content (data-driven). Expand the world by editing these tables. =====
 // Tribute to Might & Magic II: Gates to Another World — the land of CRON.
 import {
-  Race, ClassDef, Spell, ItemDef, MonsterDef, TileMap, NPCDef, QuestDef, ShopDef,
+  Race, ClassDef, Spell, ItemDef, MonsterDef, TileMap, NPCDef, QuestDef, ShopDef, TownDef,
 } from '../types';
 
 export const RACES: Race[] = [
@@ -43,6 +43,21 @@ export const SPELLS: Spell[] = [
   { id: 'cure_wounds', name: '治癒重傷', nameEn: 'Cure Wounds', school: 'cleric', level: 3, cost: 6, target: 'ally', kind: 'heal', power: 40, usableOutside: true, desc: '大幅恢復生命。' },
   { id: 'raise_dead', name: '復活術', nameEn: 'Raise Dead', school: 'cleric', level: 4, cost: 10, target: 'ally', kind: 'cureDead', power: 1, usableOutside: true, desc: '使倒下的同伴復活。' },
   { id: 'holy_word', name: '神聖審判', nameEn: 'Holy Word', school: 'cleric', level: 4, cost: 8, target: 'allEnemies', kind: 'damage', power: 18, element: 'holy', usableOutside: false, desc: '神聖之力席捲敵群。' },
+  // ---- Milestone 2 additions ----
+  // Sorcerer
+  { id: 'acid_spray', name: '酸液噴濺', nameEn: 'Acid Spray', school: 'sorcerer', level: 1, cost: 3, target: 'enemy', kind: 'damage', power: 12, element: 'poison', usableOutside: false, desc: '腐蝕單一敵人。' },
+  { id: 'shield', name: '魔法護盾', nameEn: 'Shield', school: 'sorcerer', level: 2, cost: 3, target: 'party', kind: 'buffAc', power: 4, usableOutside: false, desc: '全隊防禦提升。' },
+  { id: 'haste', name: '加速術', nameEn: 'Haste', school: 'sorcerer', level: 3, cost: 6, target: 'party', kind: 'haste', power: 3, usableOutside: false, desc: '全隊行動加速、更難被擊中。' },
+  { id: 'energy_blast', name: '能量爆發', nameEn: 'Energy Blast', school: 'sorcerer', level: 3, cost: 7, target: 'allEnemies', kind: 'damage', power: 16, element: 'energy', usableOutside: false, desc: '純能量轟擊全體敵人。' },
+  { id: 'ice_storm', name: '冰風暴', nameEn: 'Ice Storm', school: 'sorcerer', level: 4, cost: 9, target: 'allEnemies', kind: 'damage', power: 22, element: 'cold', usableOutside: false, desc: '冰雪席捲全場。' },
+  { id: 'town_portal', name: '城鎮傳送', nameEn: 'Town Portal', school: 'sorcerer', level: 4, cost: 8, target: 'self', kind: 'recall', power: 0, usableOutside: true, desc: '立即傳送回城鎮。' },
+  { id: 'meteor', name: '隕石術', nameEn: 'Meteor Shower', school: 'sorcerer', level: 5, cost: 13, target: 'allEnemies', kind: 'damage', power: 30, element: 'fire', usableOutside: false, desc: '天降隕石，毀滅全場。' },
+  // Cleric
+  { id: 'restore', name: '回復術', nameEn: 'Restore', school: 'cleric', level: 2, cost: 4, target: 'ally', kind: 'heal', power: 28, usableOutside: true, desc: '恢復大量生命。' },
+  { id: 'smite', name: '神罰', nameEn: 'Smite', school: 'cleric', level: 3, cost: 6, target: 'enemy', kind: 'damage', power: 22, element: 'holy', usableOutside: false, desc: '神聖之力重擊單一敵人。' },
+  { id: 'mass_heal', name: '群體治療', nameEn: 'Mass Heal', school: 'cleric', level: 3, cost: 8, target: 'party', kind: 'partyHeal', power: 26, usableOutside: true, desc: '治療整支隊伍。' },
+  { id: 'greater_protection', name: '高等守護', nameEn: 'Greater Protection', school: 'cleric', level: 4, cost: 8, target: 'party', kind: 'buffAc', power: 6, usableOutside: false, desc: '大幅提升全隊防禦。' },
+  { id: 'sunray', name: '陽炎審判', nameEn: 'Sunray', school: 'cleric', level: 5, cost: 13, target: 'allEnemies', kind: 'damage', power: 28, element: 'holy', usableOutside: false, desc: '熾烈聖光焚盡敵群。' },
 ];
 
 export const ITEMS: ItemDef[] = [
@@ -77,6 +92,36 @@ export const ITEMS: ItemDef[] = [
   { id: 'orb_of_time', name: '時光寶珠', nameEn: 'Orb of Time', type: 'quest', value: 0, desc: '維繫克朗大陸時空穩定的古老寶珠。' },
   { id: 'moonleaf', name: '月光草', nameEn: 'Moonleaf', type: 'quest', value: 0, desc: '只生長在地城陰影中的藥草，藥師葛瑞塔需要它。' },
   { id: 'arcane_tome', name: '奧術法典', nameEn: 'Arcane Tome', type: 'quest', value: 0, desc: '記載著失傳法術的古老書卷。' },
+  // ---- Milestone 2 additions ----
+  // weapons
+  { id: 'spear', name: '長矛', nameEn: 'Spear', type: 'weapon', slot: 'weapon', dmg: [3, 7], atkBonus: 1, value: 70, desc: '攻擊範圍長的刺擊武器。' },
+  { id: 'flail', name: '連枷', nameEn: 'Flail', type: 'weapon', slot: 'weapon', dmg: [3, 9], atkBonus: 1, value: 110, desc: '帶刺鐵球的鈍器。' },
+  { id: 'morning_star', name: '晨星錘', nameEn: 'Morning Star', type: 'weapon', slot: 'weapon', dmg: [4, 9], atkBonus: 2, value: 150, desc: '沉重的尖刺錘。' },
+  { id: 'two_handed_sword', name: '巨劍', nameEn: 'Two-Handed Sword', type: 'weapon', slot: 'weapon', dmg: [5, 12], atkBonus: 3, value: 260, twoHanded: true, desc: '需雙手揮舞的巨大劍刃。' },
+  { id: 'halberd', name: '戟', nameEn: 'Halberd', type: 'weapon', slot: 'weapon', dmg: [4, 11], atkBonus: 3, value: 240, twoHanded: true, desc: '斧與矛合一的長柄武器。' },
+  { id: 'crossbow', name: '十字弓', nameEn: 'Crossbow', type: 'weapon', slot: 'weapon', dmg: [4, 9], atkBonus: 2, value: 180, desc: '威力強大的遠程武器。' },
+  { id: 'war_staff', name: '戰法杖', nameEn: 'War Staff', type: 'weapon', slot: 'weapon', dmg: [2, 6], atkBonus: 2, acBonus: 1, value: 160, desc: '法師可用、兼具防禦的長杖。' },
+  { id: 'dragon_blade', name: '龍焰之劍', nameEn: 'Dragon Blade', type: 'weapon', slot: 'weapon', dmg: [6, 14], atkBonus: 4, value: 800, desc: '傳說中蘊含龍焰的寶劍。' },
+  // armor
+  { id: 'ring_mail', name: '環甲', nameEn: 'Ring Mail', type: 'armor', slot: 'armor', acBonus: 5, value: 90, desc: '縫綴金屬環的護甲。' },
+  { id: 'scale_mail', name: '鱗甲', nameEn: 'Scale Mail', type: 'armor', slot: 'armor', acBonus: 7, value: 200, desc: '層疊鱗片的護甲。' },
+  { id: 'splint_mail', name: '板條甲', nameEn: 'Splint Mail', type: 'armor', slot: 'armor', acBonus: 8, value: 300, desc: '金屬板條強化的護甲。' },
+  { id: 'dragon_plate', name: '龍鱗板甲', nameEn: 'Dragon Plate', type: 'armor', slot: 'armor', acBonus: 13, value: 900, desc: '以龍鱗鍛造的傳說護甲。' },
+  { id: 'arcane_robe', name: '奧術長袍', nameEn: 'Arcane Robe', type: 'armor', slot: 'armor', acBonus: 3, value: 220, desc: '不妨礙施法、附帶護盾的長袍。' },
+  // shields / helms
+  { id: 'tower_shield', name: '塔盾', nameEn: 'Tower Shield', type: 'shield', slot: 'shield', acBonus: 5, value: 200, desc: '巨大的全身防護盾。' },
+  { id: 'great_helm', name: '巨盔', nameEn: 'Great Helm', type: 'helm', slot: 'helm', acBonus: 3, value: 140, desc: '厚重的全罩式頭盔。' },
+  // accessories
+  { id: 'ring_might', name: '力量之戒', nameEn: 'Ring of Might', type: 'accessory', slot: 'accessory', atkBonus: 3, value: 320, desc: '大幅增強攻擊。' },
+  { id: 'cloak_protection', name: '守護斗篷', nameEn: 'Cloak of Protection', type: 'accessory', slot: 'accessory', acBonus: 3, value: 320, desc: '飄逸間散發防護之力。' },
+  // consumables
+  { id: 'antidote', name: '解毒劑', nameEn: 'Antidote', type: 'consumable', heal: 10, value: 15, desc: '解除毒素並回復少量生命。' },
+  { id: 'elixir', name: '萬靈藥', nameEn: 'Elixir', type: 'consumable', heal: 60, restore: 30, value: 120, desc: '同時回復生命與法力。' },
+  { id: 'greater_mana', name: '高級法力藥水', nameEn: 'Greater Mana Potion', type: 'consumable', restore: 45, value: 70, desc: '恢復 45 點法力。' },
+  // quest items
+  { id: 'sea_crown', name: '海皇冠冕', nameEn: 'Crown of the Deep', type: 'quest', value: 0, desc: '沉沒洞窟魔王守護的古老冠冕。' },
+  { id: 'ancient_scroll', name: '遠古卷軸', nameEn: 'Ancient Scroll', type: 'quest', value: 0, desc: '智者賽吉想研究的神祕卷軸。' },
+  { id: 'rune_key', name: '符文鑰匙', nameEn: 'Rune Key', type: 'quest', value: 0, desc: '開啟沉沒洞窟深處封印的符文之鑰。' },
 ];
 
 export const MONSTERS: MonsterDef[] = [
@@ -89,6 +134,19 @@ export const MONSTERS: MonsterDef[] = [
   { id: 'zombie', name: '殭屍', nameEn: 'Zombie', hp: 26, ac: 3, attack: 4, dmg: [3, 10], speed: 5, xp: 55, gold: [5, 12], resist: { cold: 50 }, color: '#7f5539', desc: '緩慢但耐打的腐屍。' },
   { id: 'dark_acolyte', name: '黑暗祭司', nameEn: 'Dark Acolyte', hp: 20, ac: 4, attack: 3, dmg: [2, 6], speed: 11, xp: 75, gold: [18, 36], spellId: 'spark', color: '#5a189a', desc: '會施放法術的敵人。' },
   { id: 'corrupt_guardian', name: '墮落守護者', nameEn: 'Corrupt Guardian', hp: 150, ac: 9, attack: 9, dmg: [6, 15], speed: 13, xp: 700, gold: [250, 400], spellId: 'fireball', resist: { cold: 50, shock: 30 }, boss: true, color: '#7c3aed', desc: '受夏特姆（Sheltem）腐化、看守時光寶珠的遠古守護者。' },
+  // ---- Milestone 2 additions ----
+  { id: 'bandit', name: '強盜', nameEn: 'Bandit', hp: 15, ac: 4, attack: 4, dmg: [3, 7], speed: 11, xp: 40, gold: [10, 26], color: '#6c584c', desc: '攔路打劫的亡命之徒。' },
+  { id: 'wolf', name: '野狼', nameEn: 'Wolf', hp: 13, ac: 4, attack: 4, dmg: [3, 8], speed: 15, xp: 42, gold: [0, 4], color: '#8d99ae', desc: '迅捷的掠食者。' },
+  { id: 'ghoul', name: '食屍鬼', nameEn: 'Ghoul', hp: 24, ac: 5, attack: 5, dmg: [4, 9], speed: 9, xp: 70, gold: [10, 22], resist: { cold: 50, poison: 50 }, color: '#6a994e', desc: '啃食腐肉的不死生物。' },
+  { id: 'harpy', name: '鷹身女妖', nameEn: 'Harpy', hp: 20, ac: 6, attack: 5, dmg: [3, 8], speed: 16, xp: 72, gold: [8, 20], color: '#bc6c25', desc: '從天而降的尖嘯怪物。' },
+  { id: 'ogre', name: '食人魔', nameEn: 'Ogre', hp: 38, ac: 5, attack: 6, dmg: [6, 13], speed: 7, xp: 110, gold: [20, 45], color: '#7f5539', desc: '力大無窮的巨怪。' },
+  { id: 'gargoyle', name: '石像鬼', nameEn: 'Gargoyle', hp: 34, ac: 8, attack: 6, dmg: [4, 10], speed: 10, xp: 120, gold: [15, 38], resist: { fire: 30, cold: 30 }, color: '#5c677d', desc: '堅硬如石的飛行守衛。' },
+  { id: 'troll', name: '巨魔', nameEn: 'Troll', hp: 52, ac: 6, attack: 7, dmg: [6, 14], speed: 8, xp: 160, gold: [25, 55], color: '#386641', desc: '再生力驚人的巨怪。' },
+  { id: 'witch', name: '女巫', nameEn: 'Witch', hp: 28, ac: 5, attack: 4, dmg: [2, 6], speed: 12, xp: 130, gold: [30, 60], spellId: 'frostbite', color: '#9d4edd', desc: '施放冰霜詛咒的術士。' },
+  { id: 'dark_knight', name: '黑暗騎士', nameEn: 'Dark Knight', hp: 46, ac: 9, attack: 8, dmg: [6, 12], speed: 11, xp: 170, gold: [35, 70], color: '#3a0ca3', desc: '墮落的鋼鐵戰士。' },
+  { id: 'minotaur', name: '牛頭怪', nameEn: 'Minotaur', hp: 58, ac: 7, attack: 8, dmg: [7, 15], speed: 9, xp: 200, gold: [40, 80], color: '#6f1d1b', desc: '迷宮中的狂暴守衛。' },
+  { id: 'fire_drake', name: '火焰飛龍', nameEn: 'Fire Drake', hp: 64, ac: 8, attack: 8, dmg: [6, 14], speed: 13, xp: 240, gold: [50, 100], spellId: 'flame_arrow', resist: { fire: 70 }, color: '#e85d04', desc: '噴吐火焰的年輕龍獸。' },
+  { id: 'sea_serpent', name: '深海巨蛇', nameEn: 'Sea Serpent', hp: 220, ac: 10, attack: 10, dmg: [8, 18], speed: 14, xp: 900, gold: [350, 550], spellId: 'ice_storm', resist: { cold: 70, fire: 20 }, boss: true, color: '#0077b6', desc: '盤踞沉沒洞窟、守護海皇冠冕的遠古巨蛇。' },
 ];
 
 // ---------- Maps ----------
@@ -99,24 +157,29 @@ export const MAPS: TileMap[] = [
     nameEn: 'Land of CRON',
     kind: 'overworld',
     grid: [
-      '##############',
-      '#............#',
-      '#..~~~.......#',
-      '#..~~~..^^...#',
-      '#.......^^...#',
-      '#...TT......#',
-      '#...TT......#',
-      '#...........#',
-      '#...........#',
-      '##############',
+      '################',
+      '#..............#',
+      '#..~~.....^^...#',
+      '#..~~.....^^...#',
+      '#..............#',
+      '#......TT......#',
+      '#......TT......#',
+      '#..............#',
+      '#...^^....~~...#',
+      '#...^^....~~...#',
+      '################',
     ],
-    start: { x: 3, y: 8, dir: 0 },
+    start: { x: 3, y: 9, dir: 1 },
     portals: {
-      '2,8': { toMap: 'overworld', to: { x: 2, y: 8 }, toScreen: 'town', label: '中央之門' },
-      '12,1': { toMap: 'dungeon1', to: { x: 1, y: 1, dir: 1 }, label: '地城入口' },
+      '2,9': { toMap: 'overworld', to: { x: 2, y: 9 }, toScreen: 'town', town: 'middlegate', label: '中央之門 Middlegate' },
+      '13,2': { toMap: 'overworld', to: { x: 13, y: 2 }, toScreen: 'town', town: 'atlantium', label: '亞特蘭提姆 Atlantium' },
+      '13,9': { toMap: 'dungeon1', to: { x: 1, y: 1, dir: 1 }, label: '中央之門地城' },
+      '2,2': { toMap: 'caverns1', to: { x: 1, y: 1, dir: 1 }, label: '沉沒洞窟' },
     },
     encounters: {
-      '7,6': { monsters: [{ id: 'goblin', count: [1, 2] }, { id: 'kobold', count: [1, 2] }] },
+      '8,4': { monsters: [{ id: 'wolf', count: [1, 3] }, { id: 'bandit', count: [1, 2] }] },
+      '5,7': { monsters: [{ id: 'goblin', count: [1, 2] }, { id: 'harpy', count: [1, 2] }] },
+      '11,7': { monsters: [{ id: 'ogre', count: [1, 1] }, { id: 'wolf', count: [1, 2] }] },
     },
   },
   {
@@ -154,7 +217,7 @@ export const MAPS: TileMap[] = [
     },
     portals: {
       '10,1': { toMap: 'dungeon2', to: { x: 1, y: 1, dir: 1 }, label: '向下的階梯' },
-      '1,1': { toMap: 'overworld', to: { x: 11, y: 1, dir: 3 }, label: '回到地表' },
+      '1,1': { toMap: 'overworld', to: { x: 12, y: 9, dir: 3 }, label: '回到地表' },
     },
   },
   {
@@ -182,10 +245,79 @@ export const MAPS: TileMap[] = [
     encounters: {
       '5,3': { monsters: [{ id: 'orc', count: [1, 2] }, { id: 'cave_spider', count: [1, 2] }] },
       '8,5': { monsters: [{ id: 'zombie', count: [1, 2] }, { id: 'dark_acolyte', count: [1, 1] }] },
-      '10,7': { monsters: [{ id: 'corrupt_guardian', count: [1, 1] }], once: true, boss: true },
+      '10,7': { monsters: [{ id: 'corrupt_guardian', count: [1, 1] }], once: true, boss: true, bossItem: 'orb_of_time', bossFlag: 'boss_dead' },
     },
     portals: {
       '1,1': { toMap: 'dungeon1', to: { x: 10, y: 1, dir: 3 }, label: '向上的階梯' },
+    },
+  },
+  {
+    id: 'caverns1',
+    name: '沉沒洞窟 · 一層',
+    nameEn: 'Sunken Caverns · L1',
+    kind: 'dungeon',
+    level: 1,
+    grid: [
+      '############',
+      '#S......#D.#',
+      '#.........##',
+      '#..........#',
+      '#..........#',
+      '#....##....#',
+      '#....##....#',
+      '#..........#',
+      '#..........#',
+      '#..........#',
+      '############',
+    ],
+    start: { x: 1, y: 1, dir: 1 },
+    doors: {
+      '9,1': { locked: true, keyItem: 'rune_key', text: '一扇由符文封印的厚重石門。' },
+    },
+    chests: {
+      '10,9': { items: ['rune_key'], gold: [40, 80] },
+      '1,9': { gold: [60, 110], items: ['greater_healing', 'ancient_scroll'] },
+      '10,3': { gold: [30, 60], items: ['scale_mail'] },
+    },
+    encounters: {
+      '3,5': { monsters: [{ id: 'ghoul', count: [1, 2] }, { id: 'bandit', count: [1, 2] }] },
+      '8,7': { monsters: [{ id: 'gargoyle', count: [1, 2] }] },
+      '5,8': { monsters: [{ id: 'troll', count: [1, 1] }, { id: 'wolf', count: [1, 2] }] },
+    },
+    portals: {
+      '10,1': { toMap: 'caverns2', to: { x: 1, y: 1, dir: 1 }, label: '通往深處的階梯' },
+      '1,1': { toMap: 'overworld', to: { x: 2, y: 3, dir: 2 }, label: '回到地表' },
+    },
+  },
+  {
+    id: 'caverns2',
+    name: '沉沒洞窟 · 深淵',
+    nameEn: 'Sunken Caverns · Abyss',
+    kind: 'dungeon',
+    level: 2,
+    grid: [
+      '############',
+      '#..........#',
+      '#..####....#',
+      '#..........#',
+      '#....##....#',
+      '#....##....#',
+      '#..........#',
+      '#..........#',
+      '############',
+    ],
+    start: { x: 1, y: 1, dir: 1 },
+    chests: {
+      '1,6': { gold: [80, 140], items: ['elixir', 'dragon_blade'] },
+      '10,1': { gold: [60, 110], items: ['tower_shield'] },
+    },
+    encounters: {
+      '5,3': { monsters: [{ id: 'dark_knight', count: [1, 2] }, { id: 'witch', count: [1, 1] }] },
+      '8,5': { monsters: [{ id: 'minotaur', count: [1, 1] }, { id: 'fire_drake', count: [1, 1] }] },
+      '10,7': { monsters: [{ id: 'sea_serpent', count: [1, 1] }], once: true, boss: true, bossItem: 'sea_crown', bossFlag: 'boss2_dead' },
+    },
+    portals: {
+      '1,1': { toMap: 'caverns1', to: { x: 10, y: 1, dir: 3 }, label: '向上的階梯' },
     },
   },
 ];
@@ -260,7 +392,7 @@ export const NPCS: NPCDef[] = [
     root: 'start',
     entries: [
       { cond: { questComplete: 'goblin_threat' }, node: 'done' },
-      { cond: { questActive: 'goblin_threat', cleared: 'overworld:7,6' }, node: 'reward' },
+      { cond: { questActive: 'goblin_threat', cleared: 'overworld:5,7' }, node: 'reward' },
       { cond: { questActive: 'goblin_threat' }, node: 'reminder' },
     ],
     nodes: {
@@ -389,6 +521,64 @@ export const NPCS: NPCDef[] = [
       hero: { id: 'hero', text: '「是你救了克朗！孩子們都在傳唱你的事蹟呢！」', options: [{ label: '不敢當', action: { end: true } }] },
     },
   },
+  {
+    id: 'atlantium_tavern',
+    name: '亞特蘭提姆酒館主 瑪琳',
+    nameEn: 'Marlin of Atlantium',
+    root: 'start',
+    entries: [
+      { cond: { questComplete: 'caverns_quest' }, node: 'done' },
+      { cond: { questActive: 'caverns_quest', item: 'sea_crown' }, node: 'reward' },
+      { cond: { questActive: 'caverns_quest' }, node: 'reminder' },
+    ],
+    nodes: {
+      start: {
+        id: 'start',
+        text: '「西北方的沉沒洞窟裡，深海巨蛇守著古老的『海皇冠冕』。沒人敢去。你願意挑戰嗎？需要符文鑰匙才能進入深淵。」',
+        options: [
+          { label: '我去取回冠冕', to: 'accept', action: { giveQuest: 'caverns_quest' } },
+          { label: '太危險了', action: { end: true } },
+        ],
+      },
+      accept: { id: 'accept', text: '「符文鑰匙就在洞窟一層的寶箱裡。願海神保佑你。」', options: [{ label: '出發', action: { end: true } }] },
+      reminder: { id: 'reminder', text: '「深海巨蛇還盤踞在沉沒洞窟的深淵呢。記得拿符文鑰匙。」', options: [{ label: '我會的', action: { end: true } }] },
+      reward: {
+        id: 'reward',
+        text: '「海皇冠冕！你真的辦到了！這是亞特蘭提姆全城的謝禮，英雄。」',
+        options: [{ label: '領取獎賞', action: { completeQuest: 'caverns_quest', giveItem: 'cloak_protection', end: true } }],
+      },
+      done: { id: 'done', text: '「海皇冠冕已安置於神殿，克朗的海岸恢復了平靜。」', options: [{ label: '離開', action: { end: true } }] },
+    },
+  },
+  {
+    id: 'sage',
+    name: '智者 賽吉',
+    nameEn: 'Sage Theron',
+    root: 'start',
+    entries: [
+      { cond: { questComplete: 'sage_quest' }, node: 'done' },
+      { cond: { questActive: 'sage_quest', item: 'ancient_scroll' }, node: 'reward' },
+      { cond: { questActive: 'sage_quest' }, node: 'reminder' },
+    ],
+    nodes: {
+      start: {
+        id: 'start',
+        text: '「沉沒洞窟裡有一卷『遠古卷軸』，記載著失傳的傳送法術。替我取回，我便將『城鎮傳送』之術傳授給你的法師。」',
+        options: [
+          { label: '交給我', to: 'accept', action: { giveQuest: 'sage_quest' } },
+          { label: '考慮一下', action: { end: true } },
+        ],
+      },
+      accept: { id: 'accept', text: '「卷軸在洞窟一層的寶箱中。感激不盡。」', options: [{ label: '了解', action: { end: true } }] },
+      reminder: { id: 'reminder', text: '「遠古卷軸找到了嗎？就在沉沒洞窟一層。」', options: [{ label: '快了', action: { end: true } }] },
+      reward: {
+        id: 'reward',
+        text: '「正是這卷軸！如約定，『城鎮傳送』之術現在屬於你的法師了。」',
+        options: [{ label: '領取傳授', action: { completeQuest: 'sage_quest', teachSpell: 'town_portal', end: true } }],
+      },
+      done: { id: 'done', text: '「有了卷軸，我能研究的東西可多了。多謝你，旅人。」', options: [{ label: '離開', action: { end: true } }] },
+    },
+  },
 ];
 
 export const QUESTS: QuestDef[] = [
@@ -396,15 +586,39 @@ export const QUESTS: QuestDef[] = [
   { id: 'goblin_threat', name: '哥布林威脅', nameEn: 'The Goblin Threat', giver: 'elder', desc: '擊退盤踞在中央之門城外的哥布林部隊。', hint: '哥布林在戶外地圖東南方。', rewardGold: 150, rewardXp: 120 },
   { id: 'herb_gathering', name: '月光草採集', nameEn: 'Moonleaf Gathering', giver: 'herbalist', itemRequired: 'moonleaf', desc: '為藥師葛瑞塔採集地城裡的月光草。', hint: '月光草在地城一層的寶箱中。', rewardGold: 120, rewardXp: 100 },
   { id: 'lost_tome', name: '失落的法典', nameEn: 'The Lost Tome', giver: 'mage_apprentice', itemRequired: 'arcane_tome', desc: '為法師學徒費歐尋回遺落的奧術法典。', hint: '奧術法典在地城深層的寶箱中。', rewardGold: 200, rewardXp: 160 },
+  { id: 'caverns_quest', name: '海皇冠冕', nameEn: 'Crown of the Deep', giver: 'atlantium_tavern', itemRequired: 'sea_crown', desc: '從沉沒洞窟的深海巨蛇手中取回海皇冠冕。', hint: '需要符文鑰匙（洞窟一層）才能進入深淵，擊敗深海巨蛇。', rewardGold: 900, rewardXp: 700 },
+  { id: 'sage_quest', name: '遠古卷軸', nameEn: 'The Ancient Scroll', giver: 'sage', itemRequired: 'ancient_scroll', desc: '為智者賽吉尋回沉沒洞窟中的遠古卷軸。', hint: '遠古卷軸在沉沒洞窟一層的寶箱中。', rewardGold: 300, rewardXp: 240 },
 ];
 
 // ---------- Shops ----------
 export const SHOPS: ShopDef[] = [
-  { id: 'weapon_smith', name: '武器鋪', nameEn: 'Weapon Smith', kind: 'goods', stock: ['dagger', 'short_sword', 'mace', 'long_sword', 'battle_axe', 'katana', 'short_bow'] },
-  { id: 'armorer', name: '防具鋪', nameEn: 'Armorer', kind: 'goods', stock: ['cloth', 'leather', 'chain', 'plate', 'buckler', 'kite_shield', 'leather_cap', 'iron_helm'] },
-  { id: 'magic_guild', name: '魔法公會', nameEn: 'Magic Guild', kind: 'magic', stock: ['healing_potion', 'mana_potion', 'greater_healing'], spells: ['flame_arrow', 'wizard_eye', 'frostbite', 'fireball', 'lightning', 'sleep', 'heal', 'bless', 'protection', 'turn_undead', 'cure_wounds', 'holy_word', 'raise_dead'] },
+  // Middlegate (starter)
+  { id: 'weapon_smith', name: '武器鋪', nameEn: 'Weapon Smith', kind: 'goods', stock: ['dagger', 'short_sword', 'mace', 'long_sword', 'battle_axe', 'katana', 'short_bow', 'spear'] },
+  { id: 'armorer', name: '防具鋪', nameEn: 'Armorer', kind: 'goods', stock: ['cloth', 'leather', 'ring_mail', 'chain', 'plate', 'buckler', 'kite_shield', 'leather_cap', 'iron_helm'] },
+  { id: 'magic_guild', name: '魔法公會', nameEn: 'Magic Guild', kind: 'magic', stock: ['healing_potion', 'mana_potion', 'greater_healing', 'antidote'], spells: ['flame_arrow', 'acid_spray', 'wizard_eye', 'shield', 'frostbite', 'fireball', 'lightning', 'sleep', 'heal', 'restore', 'bless', 'protection', 'turn_undead', 'cure_wounds', 'holy_word', 'raise_dead'] },
+  // Atlantium (advanced)
+  { id: 'master_smith', name: '大師武器鋪', nameEn: 'Master Smith', kind: 'goods', stock: ['morning_star', 'flail', 'crossbow', 'two_handed_sword', 'halberd', 'war_staff', 'dragon_blade'] },
+  { id: 'master_armory', name: '大師防具鋪', nameEn: 'Master Armory', kind: 'goods', stock: ['scale_mail', 'splint_mail', 'arcane_robe', 'dragon_plate', 'tower_shield', 'great_helm', 'ring_might', 'cloak_protection', 'ring_protection', 'amulet_might'] },
+  { id: 'arcane_emporium', name: '奧術商會', nameEn: 'Arcane Emporium', kind: 'magic', stock: ['greater_healing', 'greater_mana', 'elixir'], spells: ['haste', 'energy_blast', 'ice_storm', 'town_portal', 'meteor', 'smite', 'mass_heal', 'greater_protection', 'sunray'] },
+  // shared services
   { id: 'temple', name: '神殿', nameEn: 'Temple', kind: 'temple', stock: [] },
   { id: 'inn', name: '旅店', nameEn: 'Inn', kind: 'inn', stock: [] },
+];
+
+// ---------- Towns ----------
+export const TOWNS: TownDef[] = [
+  {
+    id: 'middlegate', name: '中央之門 Middlegate', nameEn: 'Middlegate',
+    desc: '克朗大陸上最後的安全據點，冒險的起點。',
+    shops: ['weapon_smith', 'armorer', 'magic_guild'],
+    npcs: ['tavern_keeper', 'elder', 'herbalist', 'mage_apprentice', 'priest', 'townsfolk'],
+  },
+  {
+    id: 'atlantium', name: '亞特蘭提姆 Atlantium', nameEn: 'Atlantium',
+    desc: '繁華的學者之城，販售高階裝備與法術。',
+    shops: ['master_smith', 'master_armory', 'arcane_emporium'],
+    npcs: ['atlantium_tavern', 'sage', 'townsfolk'],
+  },
 ];
 
 // ---------- Lookup helpers ----------
@@ -423,3 +637,4 @@ export const mapMap = byId(MAPS);
 export const npcMap = byId(NPCS);
 export const questMap = byId(QUESTS);
 export const shopMap = byId(SHOPS);
+export const townMap = byId(TOWNS);
