@@ -1,10 +1,10 @@
 // ===== Pure-ish game engine. Operates on a JSON-serializable GameState. =====
 import {
   GameState, Character, Attrs, AttrKey, Combat, CombatMonster, EncounterDef,
-  ChestDef, DialogAction, EquipSlot,
+  ChestDef, DialogAction, DialogCond, EquipSlot,
 } from './types';
 import {
-  raceMap, classMap, spellMap, itemMap, monsterMap, mapMap, questMap,
+  raceMap, classMap, spellMap, itemMap, monsterMap, mapMap, questMap, npcMap,
 } from './data/content';
 
 // ---------- RNG ----------
@@ -581,12 +581,42 @@ function endCombatLoss(g: GameState) {
 }
 
 // ---------- dialog / quests ----------
-export function npcRootNode(g: GameState, npcId: string): string {
-  if (npcId === 'tavern_keeper') {
-    if (g.quests['orb_quest'] === 'complete') return 'done';
-    if (g.quests['orb_quest'] === 'active' && hasItem(g, 'orb_of_terra')) return 'hasOrb';
+export function condMet(g: GameState, cond?: DialogCond): boolean {
+  if (!cond) return true;
+  if (cond.item && !hasItem(g, cond.item)) return false;
+  if (cond.notItem && hasItem(g, cond.notItem)) return false;
+  if (cond.flag && !g.flags[cond.flag]) return false;
+  if (cond.notFlag && g.flags[cond.notFlag]) return false;
+  if (cond.questActive && g.quests[cond.questActive] !== 'active') return false;
+  if (cond.questComplete && g.quests[cond.questComplete] !== 'complete') return false;
+  if (cond.questInactive && g.quests[cond.questInactive] && g.quests[cond.questInactive] !== 'inactive') return false;
+  if (cond.cleared && !g.clearedEncounters.includes(cond.cleared)) return false;
+  return true;
+}
+
+// Data-driven entry node: first matching conditional entry, else npc.root.
+export function npcEntryNode(g: GameState, npcId: string): string {
+  const npc = npcMap[npcId];
+  if (!npc) return 'start';
+  for (const e of npc.entries || []) {
+    if (condMet(g, e.cond)) return e.node;
   }
-  return 'start';
+  return npc.root;
+}
+// Backwards-compatible alias.
+export const npcRootNode = npcEntryNode;
+
+function teachSpellTo(g: GameState, spellId: string) {
+  const sp = spellMap[spellId];
+  if (!sp) return;
+  // prefer a caster of the right school who doesn't know it
+  let target = g.party.find(c => classMap[c.classId].school === sp.school && !c.spells.includes(spellId));
+  if (!target) target = g.party.find(c => classMap[c.classId].school === sp.school);
+  if (!target) { pushLog(g, '隊伍中沒有能學習此法術的成員。'); return; }
+  if (!target.spells.includes(spellId)) {
+    target.spells.push(spellId);
+    pushLog(g, `📖 ${target.name} 學會了 ${sp.name}！`);
+  }
 }
 
 export function applyDialogAction(g: GameState, action: DialogAction) {
@@ -598,19 +628,22 @@ export function applyDialogAction(g: GameState, action: DialogAction) {
     g.quests[action.completeQuest] = 'complete';
     const q = questMap[action.completeQuest];
     if (q) {
+      if (q.itemRequired) {
+        const ii = g.backpack.indexOf(q.itemRequired);
+        if (ii >= 0) g.backpack.splice(ii, 1);
+      }
       g.gold += q.rewardGold;
       const alive = aliveParty(g);
       const share = Math.max(1, Math.floor(q.rewardXp / Math.max(1, alive.length)));
       for (const ch of alive) { ch.xp += share; levelUp(g, ch); }
-      // consume orb
-      const oi = g.backpack.indexOf('orb_of_terra');
-      if (oi >= 0) g.backpack.splice(oi, 1);
-      pushLog(g, `🏆 任務完成！獲得 ${q.rewardGold} 金幣與 ${q.rewardXp} 經驗。`);
-      g.flags['orb_returned'] = true;
+      g.flags[`${q.id}_done`] = true;
+      if (q.id === 'orb_quest') g.flags['orb_returned'] = true;
+      pushLog(g, `🏆 任務完成：${q.name}！獲得 ${q.rewardGold} 金幣與 ${q.rewardXp} 經驗。`);
     }
   }
+  if (action.teachSpell) teachSpellTo(g, action.teachSpell);
   if (action.setFlag) g.flags[action.setFlag] = true;
-  if (action.giveItem) g.backpack.push(action.giveItem);
+  if (action.giveItem) { g.backpack.push(action.giveItem); pushLog(g, `獲得 ${itemMap[action.giveItem]?.name || action.giveItem}。`); }
   if (action.giveGold) g.gold += action.giveGold;
   if (action.heal) restPartyFull(g);
 }

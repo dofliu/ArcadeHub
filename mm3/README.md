@@ -24,6 +24,24 @@ A complete playthrough loop exercising every major system:
 7. **Inventory & equipment** — weapon/armor/shield/helm/accessory slots, buy & sell.
 8. **Quests & flags**, plus **save/load** to `localStorage`.
 
+### NPC dialog trees & quest lines
+
+A fully **data-driven dialog/quest system** (`src/data/content.ts`):
+
+- **Conditional dialog** — every option and each NPC's entry node is gated by a `DialogCond`
+  (held item, flag, quest state, cleared encounter). NPCs react to your progress.
+- **Six town NPCs** with branching trees, plus a **Quest Log** (active/complete, hints,
+  "ready to turn in" indicators).
+- **Four quests** wired through the system:
+  - *The Orb of Terra* (main) — key → boss → return the Orb.
+  - *The Goblin Threat* — clear an overworld warband, rewarded by the Elder.
+  - *Moonleaf Gathering* — fetch an item; the Herbalist teaches your Cleric a new spell.
+  - *The Lost Tome* — fetch an item; the Apprentice teaches your Sorcerer Fireball.
+- Dialog actions: `giveQuest`, `completeQuest` (consumes a required item), `teachSpell`,
+  `giveItem`, `giveGold`, `setFlag`, `openShop`, `heal`.
+
+Adding a new NPC, quest, or branch is pure data — no engine changes required.
+
 ## Architecture
 
 ```
@@ -52,7 +70,7 @@ npm run typecheck  # tsc --noEmit
 ## Roadmap (later milestones)
 
 - More towns & overworld regions, day/night & travel
-- NPC dialog trees & branching quest lines
+- Branching multi-stage quests & reputation
 - Traps, levers and puzzle mechanisms
 - Larger bestiary, conditions (poison/sleep/paralyze) & resistances
 - Character training/leveling at the Inn, hirelings

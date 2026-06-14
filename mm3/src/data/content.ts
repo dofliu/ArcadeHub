@@ -69,6 +69,8 @@ export const ITEMS: ItemDef[] = [
   // quest
   { id: 'crystal_key', name: '水晶鑰匙', nameEn: 'Crystal Key', type: 'quest', value: 0, desc: '能開啟地城深處封印之門。' },
   { id: 'orb_of_terra', name: '泰拉星界寶珠', nameEn: 'Orb of Terra', type: 'quest', value: 0, desc: '蘊含泰拉群島古老力量的寶珠。' },
+  { id: 'moonleaf', name: '月光草', nameEn: 'Moonleaf', type: 'quest', value: 0, desc: '只生長在地城陰影中的藥草，藥師葛瑞塔需要它。' },
+  { id: 'arcane_tome', name: '奧術法典', nameEn: 'Arcane Tome', type: 'quest', value: 0, desc: '記載著失傳法術的古老書卷。' },
 ];
 
 export const MONSTERS: MonsterDef[] = [
@@ -136,7 +138,7 @@ export const MAPS: TileMap[] = [
     },
     chests: {
       '10,9': { items: ['crystal_key'], gold: [20, 40] },
-      '1,9': { gold: [30, 60], items: ['healing_potion'] },
+      '1,9': { gold: [30, 60], items: ['healing_potion', 'moonleaf'] },
       '10,3': { gold: [15, 35], items: ['leather'] },
     },
     encounters: {
@@ -168,7 +170,7 @@ export const MAPS: TileMap[] = [
     ],
     start: { x: 1, y: 1, dir: 1 },
     chests: {
-      '1,6': { gold: [40, 80], items: ['greater_healing'] },
+      '1,6': { gold: [40, 80], items: ['greater_healing', 'arcane_tome'] },
       '10,1': { gold: [30, 60], items: ['kite_shield'] },
     },
     encounters: {
@@ -183,12 +185,20 @@ export const MAPS: TileMap[] = [
 ];
 
 // ---------- NPCs / Dialog ----------
+// Town NPCs the player can talk to from the town hub (besides the tavern building).
+export const TOWN_NPCS = ['elder', 'herbalist', 'mage_apprentice', 'priest', 'townsfolk'];
+
 export const NPCS: NPCDef[] = [
   {
     id: 'tavern_keeper',
     name: '酒館老闆 古斯',
     nameEn: 'Gus the Tavernkeeper',
     root: 'start',
+    entries: [
+      { cond: { questComplete: 'orb_quest' }, node: 'done' },
+      { cond: { questActive: 'orb_quest', item: 'orb_of_terra' }, node: 'hasOrb' },
+      { cond: { questActive: 'orb_quest' }, node: 'reminder' },
+    ],
     nodes: {
       start: {
         id: 'start',
@@ -212,6 +222,11 @@ export const NPCS: NPCDef[] = [
         text: '「願光明指引你。取回寶珠後回來找我，必有重謝。」',
         options: [{ label: '出發', action: { end: true } }],
       },
+      reminder: {
+        id: 'reminder',
+        text: '「寶珠還在巫妖王手上嗎？泰拉的時間不多了…記得水晶鑰匙在一層。」',
+        options: [{ label: '我會的', action: { end: true } }],
+      },
       hasOrb: {
         id: 'hasOrb',
         text: '「你…你真的取回了寶珠！泰拉得救了！這是你應得的獎賞，英雄。」',
@@ -219,15 +234,154 @@ export const NPCS: NPCDef[] = [
       },
       done: {
         id: 'done',
-        text: '「英雄，泰拉的居民永遠感激你。」',
+        text: '「英雄，泰拉的居民永遠感激你。要不要再來一杯？算我請客。」',
         options: [{ label: '離開', action: { end: true } }],
       },
+    },
+  },
+  {
+    id: 'elder',
+    name: '村莊長老 艾德蒙',
+    nameEn: 'Elder Edmund',
+    root: 'start',
+    entries: [
+      { cond: { questComplete: 'goblin_threat' }, node: 'done' },
+      { cond: { questActive: 'goblin_threat', cleared: 'overworld:7,6' }, node: 'reward' },
+      { cond: { questActive: 'goblin_threat' }, node: 'reminder' },
+    ],
+    nodes: {
+      start: {
+        id: 'start',
+        text: '「一群哥布林盤踞在城外的道路上，商隊都不敢通行了。年輕人，你能替我們驅逐牠們嗎？」',
+        options: [
+          { label: '交給我吧', to: 'accept', action: { giveQuest: 'goblin_threat' } },
+          { label: '牠們在哪？', to: 'where' },
+          { label: '我再考慮', action: { end: true } },
+        ],
+      },
+      where: {
+        id: 'where',
+        text: '「就在城外地表的東南方，一支哥布林部隊。小心，牠們成群行動。」',
+        options: [
+          { label: '交給我吧', to: 'accept', action: { giveQuest: 'goblin_threat' } },
+          { label: '離開', action: { end: true } },
+        ],
+      },
+      accept: { id: 'accept', text: '「願你旗開得勝。」', options: [{ label: '出發', action: { end: true } }] },
+      reminder: { id: 'reminder', text: '「哥布林還在城外東南方肆虐呢。」', options: [{ label: '我這就去', action: { end: true } }] },
+      reward: {
+        id: 'reward',
+        text: '「道路又安全了！這枚守護戒指是我們的謝意，請收下。」',
+        options: [{ label: '領取獎賞', action: { completeQuest: 'goblin_threat', giveItem: 'ring_protection', end: true } }],
+      },
+      done: { id: 'done', text: '「多虧了你，商隊又開始通行了。」', options: [{ label: '離開', action: { end: true } }] },
+    },
+  },
+  {
+    id: 'herbalist',
+    name: '藥師 葛瑞塔',
+    nameEn: 'Greta the Herbalist',
+    root: 'start',
+    entries: [
+      { cond: { questComplete: 'herb_gathering' }, node: 'done' },
+      { cond: { questActive: 'herb_gathering', item: 'moonleaf' }, node: 'reward' },
+      { cond: { questActive: 'herb_gathering' }, node: 'reminder' },
+    ],
+    nodes: {
+      start: {
+        id: 'start',
+        text: '「我需要一種叫『月光草』的藥草，只生長在地城的陰影裡。幫我採來，我教你的牧師一個治療祕術。」',
+        options: [
+          { label: '我會留意', to: 'accept', action: { giveQuest: 'herb_gathering' } },
+          { label: '沒興趣', action: { end: true } },
+        ],
+      },
+      accept: { id: 'accept', text: '「月光草通常藏在地城一層的箱子裡。謝謝你！」', options: [{ label: '好的', action: { end: true } }] },
+      reminder: { id: 'reminder', text: '「找到月光草了嗎？試試地城一層的寶箱。」', options: [{ label: '還在找', action: { end: true } }] },
+      reward: {
+        id: 'reward',
+        text: '「正是月光草！如約定，我把『治癒重傷』的祕術傳授給你的牧師。」',
+        options: [{ label: '領取傳授', action: { completeQuest: 'herb_gathering', teachSpell: 'cure_wounds', end: true } }],
+      },
+      done: { id: 'done', text: '「願月光草的清香伴你左右。」', options: [{ label: '離開', action: { end: true } }] },
+    },
+  },
+  {
+    id: 'mage_apprentice',
+    name: '法師學徒 費歐',
+    nameEn: 'Fio the Apprentice',
+    root: 'start',
+    entries: [
+      { cond: { questComplete: 'lost_tome' }, node: 'done' },
+      { cond: { questActive: 'lost_tome', item: 'arcane_tome' }, node: 'reward' },
+      { cond: { questActive: 'lost_tome' }, node: 'reminder' },
+    ],
+    nodes: {
+      start: {
+        id: 'start',
+        text: '「我師父的『奧術法典』遺落在地城深層。若你能取回，我就把裡面的火球術教給你的法師！」',
+        options: [
+          { label: '我幫你找', to: 'accept', action: { giveQuest: 'lost_tome' } },
+          { label: '改天吧', action: { end: true } },
+        ],
+      },
+      accept: { id: 'accept', text: '「法典應該在地城『深層』的某個寶箱裡。萬分感謝！」', options: [{ label: '了解', action: { end: true } }] },
+      reminder: { id: 'reminder', text: '「奧術法典還在地城深層呢，拜託了。」', options: [{ label: '快了', action: { end: true } }] },
+      reward: {
+        id: 'reward',
+        text: '「這就是法典！依約，火球術現在屬於你的法師了。」',
+        options: [{ label: '領取傳授', action: { completeQuest: 'lost_tome', teachSpell: 'fireball', end: true } }],
+      },
+      done: { id: 'done', text: '「有了法典，師父一定會誇獎我的！」', options: [{ label: '離開', action: { end: true } }] },
+    },
+  },
+  {
+    id: 'priest',
+    name: '神殿祭司 賽勒斯',
+    nameEn: 'Priest Cyrus',
+    root: 'start',
+    entries: [
+      { cond: { flag: 'boss_dead' }, node: 'afterBoss' },
+    ],
+    nodes: {
+      start: {
+        id: 'start',
+        text: '「光明與你同在，旅人。巫妖王的詛咒讓不死者橫行地城。神聖的法術對牠們格外有效，切記。」',
+        options: [
+          { label: '謝謝指點', action: { end: true } },
+          { label: '為我們祈福', to: 'bless', action: { heal: true } },
+        ],
+      },
+      bless: { id: 'bless', text: '「願神恩治癒你們的傷痛。」', options: [{ label: '阿們', action: { end: true } }] },
+      afterBoss: {
+        id: 'afterBoss',
+        text: '「巫妖王已被擊敗？太好了！泰拉的亡魂終於能安息。願你福澤綿長。」',
+        options: [{ label: '為我們祈福', to: 'bless', action: { heal: true } }, { label: '離開', action: { end: true } }],
+      },
+    },
+  },
+  {
+    id: 'townsfolk',
+    name: '城鎮居民',
+    nameEn: 'Townsperson',
+    root: 'start',
+    entries: [
+      { cond: { flag: 'orb_returned' }, node: 'hero' },
+      { cond: { questActive: 'orb_quest' }, node: 'worried' },
+    ],
+    nodes: {
+      start: { id: 'start', text: '「歡迎來到索皮加城。城外的地城最近很不平靜，聽說連商隊都被哥布林攔路了。」', options: [{ label: '了解', action: { end: true } }] },
+      worried: { id: 'worried', text: '「你就是要去討伐巫妖王的冒險者嗎？拜託一定要成功啊…」', options: [{ label: '我會的', action: { end: true } }] },
+      hero: { id: 'hero', text: '「是你救了泰拉！孩子們都在傳唱你的事蹟呢！」', options: [{ label: '不敢當', action: { end: true } }] },
     },
   },
 ];
 
 export const QUESTS: QuestDef[] = [
-  { id: 'orb_quest', name: '泰拉星界寶珠', nameEn: 'The Orb of Terra', desc: '從地城深處的巫妖王手中取回泰拉星界寶珠。', rewardGold: 500, rewardXp: 400 },
+  { id: 'orb_quest', name: '泰拉星界寶珠', nameEn: 'The Orb of Terra', giver: 'tavern_keeper', itemRequired: 'orb_of_terra', desc: '從地城深處的巫妖王手中取回泰拉星界寶珠。', hint: '需要水晶鑰匙進入地城深層，擊敗巫妖王。', rewardGold: 500, rewardXp: 400 },
+  { id: 'goblin_threat', name: '哥布林威脅', nameEn: 'The Goblin Threat', giver: 'elder', desc: '擊退盤踞在城外地表的哥布林部隊。', hint: '哥布林在戶外地圖東南方。', rewardGold: 150, rewardXp: 120 },
+  { id: 'herb_gathering', name: '月光草採集', nameEn: 'Moonleaf Gathering', giver: 'herbalist', itemRequired: 'moonleaf', desc: '為藥師葛瑞塔採集地城裡的月光草。', hint: '月光草在地城一層的寶箱中。', rewardGold: 120, rewardXp: 100 },
+  { id: 'lost_tome', name: '失落的法典', nameEn: 'The Lost Tome', giver: 'mage_apprentice', itemRequired: 'arcane_tome', desc: '為法師學徒費歐尋回遺落的奧術法典。', hint: '奧術法典在地城深層的寶箱中。', rewardGold: 200, rewardXp: 160 },
 ];
 
 // ---------- Shops ----------

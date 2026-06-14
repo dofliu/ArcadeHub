@@ -1,6 +1,6 @@
 // Headless engine smoke test — exercises core flows without the DOM.
 import * as E from '../src/engine';
-import { mapMap } from '../src/data/content';
+import { mapMap, npcMap } from '../src/data/content';
 import { GameState } from '../src/types';
 
 let failures = 0;
@@ -95,6 +95,37 @@ assert(okBuy && g.backpack.includes('plate'), 'bought plate mail');
 const acBefore = E.armorAc(g.party[0]);
 E.equipItem(g, 0, 'plate');
 assert(E.armorAc(g.party[0]) > acBefore, 'equipping plate raised armor');
+
+// 8) NPC dialog trees & conditional entries (goblin side quest, no item turn-in)
+console.log('NPC dialog & side quests:');
+assert(E.npcEntryNode(g, 'elder') === 'start', 'elder offers quest when inactive');
+E.applyDialogAction(g, { giveQuest: 'goblin_threat' });
+assert(E.npcEntryNode(g, 'elder') === 'reminder', 'elder reminds while goblins remain');
+g.clearedEncounters.push('overworld:7,6');
+assert(E.npcEntryNode(g, 'elder') === 'reward', 'elder offers reward once goblins cleared');
+const goldB = g.gold;
+E.applyDialogAction(g, { completeQuest: 'goblin_threat', giveItem: 'ring_protection' });
+assert(g.quests['goblin_threat'] === 'complete' && g.gold > goldB && g.backpack.includes('ring_protection'), 'goblin quest paid out + bonus item');
+assert(E.npcEntryNode(g, 'elder') === 'done', 'elder shows done node after completion');
+
+// 9) Item turn-in quest teaching a spell
+console.log('Item turn-in + teach spell:');
+const cleric = g.party.find(c => c.classId === 'cleric')!;
+E.applyDialogAction(g, { giveQuest: 'herb_gathering' });
+assert(E.npcEntryNode(g, 'herbalist') === 'reminder', 'herbalist waits without moonleaf');
+g.backpack.push('moonleaf');
+assert(E.npcEntryNode(g, 'herbalist') === 'reward', 'herbalist ready once moonleaf held');
+E.applyDialogAction(g, { completeQuest: 'herb_gathering', teachSpell: 'cure_wounds' });
+assert(!g.backpack.includes('moonleaf'), 'moonleaf consumed on turn-in');
+assert(cleric.spells.includes('cure_wounds'), 'cure_wounds taught to the cleric');
+
+// 10) condMet primitives + option filtering
+console.log('Conditions:');
+assert(E.condMet(g, { questComplete: 'goblin_threat' }) === true, 'condMet questComplete');
+assert(E.condMet(g, { item: 'nonexistent' }) === false, 'condMet missing item false');
+assert(E.condMet(g, { notFlag: 'never_set' }) === true, 'condMet notFlag true');
+const startNode = npcMap['tavern_keeper'].nodes['start'];
+assert(startNode.options.filter(o => E.condMet(g, o.cond)).length === startNode.options.length, 'unconditional options stay visible');
 
 console.log('\n' + (failures === 0 ? '✅ ALL SIM CHECKS PASSED' : `❌ ${failures} CHECK(S) FAILED`));
 if (failures > 0) process.exit(1);

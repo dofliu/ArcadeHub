@@ -5,7 +5,7 @@ import { mapMap, questMap } from '../data/content';
 import { drawDungeon, drawOverworld, drawCombat, drawTitle, CW, CH } from '../render';
 import { Btn, Panel, PartyBar } from './common';
 import {
-  CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen,
+  CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen,
 } from './screens';
 import {
   ArrowUp, ArrowDown, RotateCcw, RotateCw, ArrowLeft, ArrowRight, Save, FolderOpen,
@@ -97,6 +97,7 @@ export const App: React.FC = () => {
         <div className="ml-auto flex gap-2">
           {g.party.length > 0 && g.screen !== 'create' && (
             <>
+              <Btn onClick={() => apply(d => { d.screen = 'quests'; })} title="任務日誌"><ScrollText size={16} /></Btn>
               <Btn onClick={() => { setSheetActive(0); apply(d => { d.screen = 'sheet'; }); }} title="角色與背包"><Backpack size={16} /></Btn>
               <Btn onClick={() => apply(d => E.saveGame(d))} title="存檔"><Save size={16} /></Btn>
             </>
@@ -157,6 +158,7 @@ export const App: React.FC = () => {
         {g.screen === 'shop' && <ShopScreen g={g} apply={apply} />}
         {g.screen === 'dialog' && <DialogScreen g={g} apply={apply} />}
         {g.screen === 'sheet' && <SheetScreen g={g} apply={apply} active={sheetActive} setActive={setSheetActive} />}
+        {g.screen === 'quests' && <QuestLogScreen g={g} apply={apply} />}
         {g.screen === 'combat' && <CombatPanel g={g} apply={apply} />}
 
         {/* Explore movement controls */}

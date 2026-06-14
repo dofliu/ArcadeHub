@@ -10,6 +10,7 @@ export type Screen =
   | 'dialog'
   | 'shop'
   | 'sheet'
+  | 'quests'
   | 'victory'
   | 'gameover';
 
@@ -167,6 +168,18 @@ export interface Portal {
 }
 
 // ----- NPC / Dialog / Quests -----
+// A condition gate; every field present must hold (logical AND).
+export interface DialogCond {
+  item?: string;            // backpack has item
+  notItem?: string;         // backpack lacks item
+  flag?: string;            // flag is set
+  notFlag?: string;         // flag is not set
+  questActive?: string;     // quest is active
+  questComplete?: string;   // quest is complete
+  questInactive?: string;   // quest not yet started
+  cleared?: string;         // "mapId:x,y" encounter cleared
+}
+
 export interface DialogNode {
   id: string;
   text: string;
@@ -176,6 +189,7 @@ export interface DialogOption {
   label: string;
   to?: string;          // next node id
   action?: DialogAction;
+  cond?: DialogCond;    // only shown when condition holds
 }
 export interface DialogAction {
   giveQuest?: string;
@@ -183,15 +197,21 @@ export interface DialogAction {
   setFlag?: string;
   giveItem?: string;
   giveGold?: number;
+  teachSpell?: string;  // teach to first eligible caster
   openShop?: string;    // shop id
   heal?: boolean;       // temple/inn full heal
   end?: boolean;
+}
+export interface NPCEntry {
+  cond: DialogCond;
+  node: string;
 }
 export interface NPCDef {
   id: string;
   name: string;
   nameEn: string;
-  root: string;         // root dialog node id
+  root: string;         // fallback root dialog node id
+  entries?: NPCEntry[]; // conditional entry points, first match wins
   nodes: Record<string, DialogNode>;
 }
 
@@ -200,6 +220,9 @@ export interface QuestDef {
   name: string;
   nameEn: string;
   desc: string;
+  hint?: string;
+  giver?: string;       // npc id
+  itemRequired?: string;// consumed on turn-in
   rewardGold: number;
   rewardXp: number;
 }

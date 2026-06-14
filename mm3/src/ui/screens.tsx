@@ -3,11 +3,12 @@ import { Character, EquipSlot, GameState } from '../types';
 import * as E from '../engine';
 import {
   RACES, CLASSES, raceMap, classMap, spellMap, itemMap, monsterMap, npcMap, questMap, shopMap, SHOPS,
+  TOWN_NPCS, QUESTS,
 } from '../data/content';
 import { Btn, Panel, Bar, PartyBar, charLabel } from './common';
 import {
   Swords, Shield, Sparkles, Wand2, FlaskConical, Footprints, Coins, Store, Cross, BedDouble,
-  Beer, ScrollText, Backpack, ArrowLeft, Dices, Hand,
+  Beer, ScrollText, Backpack, ArrowLeft, Dices, Users, CheckCircle2, CircleAlert, Circle,
 } from 'lucide-react';
 
 type Apply = (fn: (d: GameState) => void) => void;
@@ -106,11 +107,84 @@ export const TownScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply 
         ))}
       </div>
       <div className="text-xs text-mm-light/40 mt-3">神殿：30 金幣全體治療復活  · 旅店：免費休息並存檔</div>
+
+      <div className="mt-4">
+        <div className="flex items-center justify-center gap-1 text-mm-light/50 text-xs mb-2"><Users size={13} /> 城鎮居民</div>
+        <div className="flex flex-wrap gap-2 justify-center">
+          {TOWN_NPCS.map(id => {
+            const badge = npcQuestBadge(g, id);
+            return (
+              <Btn key={id} onClick={() => apply(d => { d.dialog = { npcId: id, node: E.npcEntryNode(d, id) }; d.screen = 'dialog'; })}>
+                {npcMap[id].name}
+                {badge === 'new' && <CircleAlert size={13} className="inline ml-1 text-mm-gold" />}
+                {badge === 'ready' && <CheckCircle2 size={13} className="inline ml-1 text-green-400" />}
+              </Btn>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="flex justify-center mt-4">
         <Btn variant="primary" onClick={() => apply(d => { d.screen = 'overworld'; })}>
           <Footprints size={16} className="inline mr-1" />前往地表
         </Btn>
       </div>
+    </div>
+  );
+};
+
+// quest indicator for an NPC: 'new' = has a quest to give, 'ready' = active quest ready to turn in
+function npcQuestBadge(g: GameState, npcId: string): 'new' | 'ready' | '' {
+  const q = QUESTS.find(qq => qq.giver === npcId);
+  if (!q) return '';
+  const st = g.quests[q.id];
+  if (!st || st === 'inactive') return 'new';
+  if (st === 'active') {
+    if (q.itemRequired) return g.backpack.includes(q.itemRequired) ? 'ready' : '';
+    if (q.id === 'goblin_threat') return g.clearedEncounters.includes('overworld:7,6') ? 'ready' : '';
+  }
+  return '';
+}
+
+// ============ Quest Log ============
+export const QuestLogScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply }) => {
+  const active = QUESTS.filter(q => g.quests[q.id] === 'active');
+  const done = QUESTS.filter(q => g.quests[q.id] === 'complete');
+  const ready = (q: typeof QUESTS[number]) =>
+    g.quests[q.id] === 'active' && (q.itemRequired ? g.backpack.includes(q.itemRequired)
+      : q.id === 'goblin_threat' ? g.clearedEncounters.includes('overworld:7,6') : false);
+  return (
+    <div className="w-full max-w-xl">
+      <div className="flex items-center mb-3">
+        <ScrollText className="text-mm-gold mr-2" />
+        <h2 className="font-rune text-xl text-mm-gold">任務日誌</h2>
+        <Btn className="ml-auto" onClick={() => apply(d => { d.screen = d.party.length ? 'town' : 'title'; })}>
+          <ArrowLeft size={14} className="inline mr-1" />返回
+        </Btn>
+      </div>
+      <Panel title={`進行中 (${active.length})`} className="mb-3">
+        {active.length === 0 && <div className="text-mm-light/40 text-sm">沒有進行中的任務。</div>}
+        {active.map(q => (
+          <div key={q.id} className="flex gap-2 py-1.5 border-b border-mm-edge/40 text-sm">
+            {ready(q) ? <CheckCircle2 size={16} className="text-green-400 mt-0.5 shrink-0" /> : <Circle size={16} className="text-mm-light/30 mt-0.5 shrink-0" />}
+            <div>
+              <div className="text-mm-light font-bold">{q.name} {ready(q) && <span className="text-green-400 text-xs">（可回報）</span>}</div>
+              <div className="text-mm-light/60 text-xs">{q.desc}</div>
+              {!ready(q) && q.hint && <div className="text-mm-gold/70 text-xs mt-0.5">提示：{q.hint}</div>}
+              <div className="text-mm-light/40 text-[10px] mt-0.5">獎勵：{q.rewardGold} 金幣 · {q.rewardXp} 經驗</div>
+            </div>
+          </div>
+        ))}
+      </Panel>
+      <Panel title={`已完成 (${done.length})`}>
+        {done.length === 0 && <div className="text-mm-light/40 text-sm">尚無完成的任務。</div>}
+        {done.map(q => (
+          <div key={q.id} className="flex gap-2 py-1 text-sm text-mm-light/50">
+            <CheckCircle2 size={15} className="text-green-500/60 mt-0.5 shrink-0" />
+            <span className="line-through">{q.name}</span>
+          </div>
+        ))}
+      </Panel>
     </div>
   );
 };
@@ -214,7 +288,7 @@ export const DialogScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, appl
       <Panel title={npc.name}>
         <p className="text-mm-light/90 leading-relaxed mb-4">{node.text}</p>
         <div className="space-y-2">
-          {node.options.map((opt, i) => (
+          {node.options.filter(opt => E.condMet(g, opt.cond)).map((opt, i) => (
             <Btn key={i} className="w-full text-left" onClick={() => apply(d => {
               if (opt.action) E.applyDialogAction(d, opt.action);
               if (opt.action?.openShop) { d.shopId = opt.action.openShop; d.screen = 'shop'; d.dialog = null; return; }
