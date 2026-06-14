@@ -61,6 +61,8 @@ const translations = {
     [GameType.CUBE + '_desc']: '3D 旋轉拼圖，還原六面顏色。',
     [GameType.ADVENTURE]: 'RPG 大富翁',
     [GameType.ADVENTURE + '_desc']: '擲骰冒險，剛好走到終點才算贏！',
+    [GameType.SALAMANDER]: '沙羅曼蛇',
+    [GameType.SALAMANDER + '_desc']: '橫向捲軸射擊，吃道具強化火力擊倒魔王！',
     // Specific Instructions
     snakeControls: '方向鍵控制移動',
     tetrisControls: '↑旋轉, ←→移動, ↓加速',
@@ -79,6 +81,7 @@ const translations = {
     mahjongControls: '點擊左右無阻擋的相同牌',
     cubeControls: '滑鼠拖曳旋轉視角，按鈕轉動層',
     adventureControls: '點擊按鈕或空白鍵擲骰子',
+    salamanderControls: '方向鍵移動, 空白鍵射擊',
   },
   en: {
     appTitle: 'Arcade AI Hub',
@@ -139,6 +142,8 @@ const translations = {
     [GameType.CUBE + '_desc']: '3D puzzle, solve the faces.',
     [GameType.ADVENTURE]: 'Adventure Run',
     [GameType.ADVENTURE + '_desc']: 'Roll dice, brave events, land exactly on finish!',
+    [GameType.SALAMANDER]: 'Salamander',
+    [GameType.SALAMANDER + '_desc']: 'Side-scrolling shooter: grab power-ups and down the boss!',
     // Specific Instructions
     snakeControls: 'Arrow keys to move',
     tetrisControls: '↑Rotate, ←→Move, ↓Drop',
@@ -157,6 +162,7 @@ const translations = {
     mahjongControls: 'Click unblocked pairs to match',
     cubeControls: 'Drag to rotate view, Buttons to rotate layers',
     adventureControls: 'Click button or Space to roll dice',
+    salamanderControls: 'Arrow keys to move, Space to shoot',
   }
 };
 
