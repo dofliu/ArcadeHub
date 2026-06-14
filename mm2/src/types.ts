@@ -278,4 +278,5 @@ export interface GameState {
   shopId: string | null;
   log: string[];
   messages: string[];      // transient toasts (top)
+  sfx: string[];           // queued sound-effect event names (flushed by the UI)
 }

@@ -3,13 +3,14 @@ import { GameState } from '../types';
 import * as E from '../engine';
 import { mapMap, questMap } from '../data/content';
 import { drawDungeon, drawOverworld, drawCombat, drawTitle, CW, CH } from '../render';
+import { soundService, Sfx } from '../sound';
 import { Btn, Panel, PartyBar } from './common';
 import {
   CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen, HireScreen,
 } from './screens';
 import {
   ArrowUp, ArrowDown, RotateCcw, RotateCw, ArrowLeft, ArrowRight, Save, FolderOpen,
-  Coins, CalendarDays, Backpack, Skull, Trophy, ScrollText,
+  Coins, CalendarDays, Backpack, Skull, Trophy, ScrollText, Volume2, VolumeX,
 } from 'lucide-react';
 
 const DIRV = [
@@ -19,10 +20,27 @@ const DIRV = [
 export const App: React.FC = () => {
   const [g, setG] = useState<GameState>(() => E.newGame());
   const [sheetActive, setSheetActive] = useState(0);
+  const [soundOn, setSoundOn] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const apply = useCallback((fn: (d: GameState) => void) => {
     setG(prev => { const d = E.clone(prev); fn(d); return d; });
+  }, []);
+
+  // ----- flush queued sound effects from the engine -----
+  useEffect(() => {
+    if (g.sfx.length === 0) return;
+    for (const s of g.sfx) soundService.play(s as Sfx);
+    apply(d => { d.sfx = []; });
+  }, [g.sfx, apply]);
+
+  const toggleSound = useCallback(() => {
+    setSoundOn(v => {
+      const nv = !v;
+      soundService.setEnabled(nv);
+      if (nv) soundService.play('select');
+      return nv;
+    });
   }, []);
 
   // ----- movement -----
@@ -36,6 +54,7 @@ export const App: React.FC = () => {
   }, [apply]);
 
   const turn = useCallback((delta: number) => {
+    soundService.play('turn');
     apply(d => { if (d.screen === 'dungeon') E.turnDir(d, delta); });
   }, [apply]);
 
@@ -95,6 +114,7 @@ export const App: React.FC = () => {
           </div>
         )}
         <div className="ml-auto flex gap-2">
+          <Btn onClick={toggleSound} title={soundOn ? '靜音' : '開啟音效'}>{soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}</Btn>
           {g.party.length > 0 && g.screen !== 'create' && (
             <>
               <Btn onClick={() => apply(d => { d.screen = 'quests'; })} title="任務日誌"><ScrollText size={16} /></Btn>

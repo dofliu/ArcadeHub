@@ -1,6 +1,7 @@
 // ===== All canvas rendering =====
 import { GameState } from './types';
 import { mapMap, monsterMap } from './data/content';
+import { MONSTER_SPRITES, drawSprite } from './sprites';
 
 export const CW = 560;
 export const CH = 360;
@@ -169,15 +170,17 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
     const mx = spread * (idxInRow + 1);
     const my = CH * 0.32 + row * 70;
     const dead = m.hp <= 0;
-    ctx.globalAlpha = dead ? 0.18 : 1;
+    ctx.globalAlpha = dead ? 0.2 : 1;
+    const sprite = MONSTER_SPRITES[m.defId];
     const size = def.boss ? 60 : 26;
-    ctx.fillStyle = def.color;
-    if (def.boss) {
-      ctx.fillRect(mx - size, my - size, size * 2, size * 2.2);
-      ctx.fillStyle = '#4cc9f0';
-      ctx.beginPath(); ctx.arc(mx - 22, my - 18, 10, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(mx + 22, my - 18, 10, 0, Math.PI * 2); ctx.fill();
+    if (sprite) {
+      // EGA pixel sprite, baseline anchored just below the row centre
+      const px = def.boss ? 7 : 4;
+      const baseY = my + (def.boss ? 64 : 40);
+      drawSprite(ctx, sprite, mx, baseY, px);
     } else {
+      // fallback blob for any monster without a sprite yet
+      ctx.fillStyle = def.color;
       ctx.beginPath(); ctx.ellipse(mx, my, size, size * 1.25, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#0b0b12';
       ctx.beginPath(); ctx.arc(mx - 9, my - 6, 4, 0, Math.PI * 2); ctx.fill();
@@ -187,10 +190,11 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
     if (!dead) {
       // hp bar
       const bw = def.boss ? 120 : 50;
+      const barY = my - (def.boss ? size + 16 : size * 1.25 + 10);
       ctx.fillStyle = '#222';
-      ctx.fillRect(mx - bw / 2, my - (def.boss ? size + 16 : size * 1.25 + 10), bw, 5);
+      ctx.fillRect(mx - bw / 2, barY, bw, 5);
       ctx.fillStyle = '#9b2226';
-      ctx.fillRect(mx - bw / 2, my - (def.boss ? size + 16 : size * 1.25 + 10), bw * (m.hp / m.maxHp), 5);
+      ctx.fillRect(mx - bw / 2, barY, bw * (m.hp / m.maxHp), 5);
     }
   });
   ctx.fillStyle = '#4cc9f0';
