@@ -19,9 +19,10 @@ import MahjongGame from './components/MahjongGame';
 import CubeGame from './components/CubeGame';
 import AdventureGame from './components/AdventureGame';
 import SalamanderGame from './components/SalamanderGame';
+import MightAndMagicGame from './components/MightAndMagicGame';
 import Leaderboard from './components/Leaderboard';
 import AICommentary from './components/AICommentary';
-import { Gamepad2, Grid3x3, Move, Bomb, BoxSelect, Trophy, User, Volume2, VolumeX, Languages, BrainCircuit, MousePointer2, Rocket, Disc, ArrowUpCircle, Skull, Smile, Zap, Footprints, AlignJustify, CircleDot, Circle, Activity, Layers, Box, Map, Flame } from 'lucide-react';
+import { Gamepad2, Grid3x3, Move, Bomb, BoxSelect, Trophy, User, Volume2, VolumeX, Languages, BrainCircuit, MousePointer2, Rocket, Disc, ArrowUpCircle, Skull, Smile, Zap, Footprints, AlignJustify, CircleDot, Circle, Activity, Layers, Box, Map, Flame, Castle } from 'lucide-react';
 import { saveScore } from './services/storageService';
 import { soundService } from './services/soundService';
 import { t } from './i18n';
@@ -126,6 +127,8 @@ function App() {
         return <AdventureGame onGameOver={handleGameOver} language={language} />;
       case GameType.SALAMANDER:
         return <SalamanderGame onGameOver={handleGameOver} language={language} />;
+      case GameType.MIGHTMAGIC:
+        return <MightAndMagicGame onGameOver={handleGameOver} language={language} />;
       case GameType.LEADERBOARD:
         return <Leaderboard onBack={backToMenu} language={language} />;
       default:
@@ -304,6 +307,7 @@ function App() {
               <GameCard type={GameType.CUBE} icon={Box} color="from-blue-400 to-red-500" />
               <GameCard type={GameType.ADVENTURE} icon={Map} color="from-indigo-300 to-indigo-700" />
               <GameCard type={GameType.SALAMANDER} icon={Flame} color="from-orange-400 to-red-600" />
+              <GameCard type={GameType.MIGHTMAGIC} icon={Castle} color="from-violet-400 to-fuchsia-700" />
             </div>
           </div>
         ) : (
@@ -331,6 +335,7 @@ function App() {
                      activeGame === GameType.CUBE ? t('cubeControls', language) :
                      activeGame === GameType.ADVENTURE ? t('adventureControls', language) :
                      activeGame === GameType.SALAMANDER ? t('salamanderControls', language) :
+                     activeGame === GameType.MIGHTMAGIC ? t('mightMagicControls', language) :
                      t('simonSaysControls', language)
                   }</p>
                </div>
