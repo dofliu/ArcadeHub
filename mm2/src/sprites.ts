@@ -450,8 +450,27 @@ const CLASS_PALETTE: Record<string, Record<string, string>> = {
   barbarian: { K: '6', H: '6', C: '4', D: '6', W: '8', E: '0' },
 };
 
-export function charSpriteRows(classId: string): string[] {
-  const pal = CLASS_PALETTE[classId] || CLASS_PALETTE['knight'];
+// Skin tone by race.
+const RACE_SKIN: Record<string, string> = { human: '6', elf: '7', dwarf: '6', gnome: '6', 'half-orc': '2' };
+
+export function charSpriteRows(
+  classId: string,
+  opts?: { raceId?: string; weaponId?: string; armorId?: string },
+): string[] {
+  const pal = { ...(CLASS_PALETTE[classId] || CLASS_PALETTE['knight']) };
+  // skin by race
+  if (opts?.raceId && RACE_SKIN[opts.raceId]) pal.K = RACE_SKIN[opts.raceId];
+  // garb tint by equipped armor (robes/cloth keep the class colour)
+  const a = opts?.armorId || '';
+  if (['plate', 'splint_mail', 'mithril_plate', 'dragon_plate'].includes(a)) { pal.C = '7'; pal.D = '8'; }
+  else if (['chain', 'scale_mail', 'ring_mail'].includes(a)) { pal.C = '8'; pal.D = '7'; }
+  else if (a === 'leather') { pal.C = '6'; pal.D = '8'; }
+  // weapon colour by equipped weapon
+  const w = opts?.weaponId || '';
+  if (w.includes('bow') || w === 'crossbow') pal.W = '2';
+  else if (w.includes('staff') || w.includes('wand')) pal.W = '6';
+  else if (w === 'dagger') pal.W = '7';
+  else if (w) pal.W = 'f';
   return CHAR_TEMPLATE.map(row =>
     row.split('').map(ch => (ch === '.' ? '.' : pal[ch] || ch)).join('')
   );

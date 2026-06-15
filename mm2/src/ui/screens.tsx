@@ -8,7 +8,7 @@ import {
 import { Btn, Panel, Bar, PartyBar, charLabel } from './common';
 import {
   Swords, Shield, Sparkles, Wand2, FlaskConical, Footprints, Coins, Store, Cross, BedDouble,
-  Beer, ScrollText, Backpack, ArrowLeft, Dices, Users, CheckCircle2, CircleAlert, Circle, UserPlus,
+  Beer, ScrollText, Backpack, ArrowLeft, Dices, Users, CheckCircle2, CircleAlert, Circle, UserPlus, Dumbbell,
 } from 'lucide-react';
 
 type Apply = (fn: (d: GameState) => void) => void;
@@ -84,11 +84,13 @@ export const TownScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply 
     ...town.shops.map(id => ({ id, label: shopMap[id].name, icon: shopIcon(id), kind: 'shop' as const })),
     { id: 'temple', label: '神殿', icon: Cross, kind: 'temple' as const },
     { id: 'inn', label: '旅店', icon: BedDouble, kind: 'inn' as const },
+    { id: 'train', label: '訓練所', icon: Dumbbell, kind: 'train' as const },
     { id: 'hire', label: '雇用幫手', icon: UserPlus, kind: 'hire' as const },
   ];
   const enter = (b: { id: string; kind: string }) => {
     if (b.kind === 'shop') apply(d => { d.shopId = b.id; d.screen = 'shop'; });
     else if (b.kind === 'hire') apply(d => { d.screen = 'hire'; });
+    else if (b.kind === 'train') apply(d => { d.screen = 'train'; });
     else if (b.kind === 'temple') apply(d => {
       const cost = 30;
       if (d.gold < cost) { E.toast(d, '金幣不足（需 30）'); return; }
@@ -177,6 +179,46 @@ export const HireScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply 
               <span className="text-mm-gold w-14 text-right">{h.cost}</span>
               <Btn variant="primary" disabled={hired || full || g.gold < h.cost} onClick={() => apply(d => E.recruitHireling(d, h))}>
                 {hired ? '已雇用' : full ? '已滿' : '雇用'}
+              </Btn>
+            </div>
+          );
+        })}
+      </Panel>
+      <div className="mt-3">
+        <Btn onClick={() => apply(d => { d.screen = 'town'; })}><ArrowLeft size={14} className="inline mr-1" />離開</Btn>
+      </div>
+    </div>
+  );
+};
+
+// ============ Training grounds ============
+const ATTR_LABEL: Record<string, string> = { might: '力量', intellect: '智力', personality: '魅力', endurance: '耐力', speed: '速度', accuracy: '準確', luck: '幸運' };
+export const TrainScreen: React.FC<{ g: GameState; apply: Apply; active: number; setActive: (i: number) => void }> = ({ g, apply, active, setActive }) => {
+  const ch = g.party[active];
+  return (
+    <div className="w-full max-w-xl">
+      <div className="flex items-center mb-3">
+        <Dumbbell className="text-mm-gold mr-2" />
+        <h2 className="font-rune text-xl text-mm-gold">訓練所</h2>
+        <span className="ml-auto text-mm-gold flex items-center gap-1"><Coins size={14} />{g.gold}</span>
+      </div>
+      <p className="text-mm-light/50 text-xs mb-3">花費金幣永久提升屬性（每點上限 25）。費用 = 目前屬性值 × 25。</p>
+      <div className="flex gap-2 mb-3 flex-wrap">
+        {g.party.map((c, i) => (
+          <Btn key={i} variant={active === i ? 'gold' : 'ghost'} onClick={() => setActive(i)}>{c.name}</Btn>
+        ))}
+      </div>
+      <Panel className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+        {(['might', 'intellect', 'personality', 'endurance', 'speed', 'accuracy', 'luck'] as const).map(k => {
+          const v = ch.attrs[k];
+          const cost = E.trainCost(v);
+          const maxed = v >= 25;
+          return (
+            <div key={k} className="flex items-center gap-2 text-sm py-1 border-b border-mm-edge/40">
+              <span className="flex-1">{ATTR_LABEL[k]} <span className="text-mm-light/50">{v}</span></span>
+              <span className="text-mm-gold text-xs w-12 text-right">{maxed ? '—' : cost}</span>
+              <Btn variant="primary" disabled={maxed || g.gold < cost} onClick={() => apply(d => E.trainAttr(d, active, k))}>
+                {maxed ? '滿' : '+1'}
               </Btn>
             </div>
           );
@@ -528,9 +570,14 @@ export const SheetScreen: React.FC<{ g: GameState; apply: Apply; active: number;
               <div className="text-xs text-mm-light/50 mb-1">背包中可裝備的{SLOTS.find(s => s.slot === invSlot)?.label}：</div>
               <div className="flex flex-wrap gap-1">
                 {equippableForSlot(invSlot).length === 0 && <span className="text-mm-light/30 text-xs">無</span>}
-                {equippableForSlot(invSlot).map((id, k) => (
-                  <Btn key={id + k} onClick={() => apply(d => { E.equipItem(d, active, id); })}>{itemMap[id].name}</Btn>
-                ))}
+                {equippableForSlot(invSlot).map((id, k) => {
+                  const reason = E.equipReason(ch.classId, id);
+                  return (
+                    <Btn key={id + k} disabled={!!reason} title={reason || ''} onClick={() => apply(d => { E.equipItem(d, active, id); })}>
+                      {itemMap[id].name}{reason ? ' 🚫' : ''}
+                    </Btn>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -566,7 +613,7 @@ export const SheetScreen: React.FC<{ g: GameState; apply: Apply; active: number;
                 <div key={id + k} className="flex items-center gap-2 text-sm">
                   <span className="flex-1">{it.name} <span className="text-mm-light/40 text-xs">{it.type === 'quest' ? '★任務' : ''}</span></span>
                   {it.type === 'consumable' && <Btn variant="gold" onClick={() => apply(d => E.useConsumable(d, id, active))}>使用</Btn>}
-                  {it.slot && <Btn onClick={() => apply(d => E.equipItem(d, active, id))}>裝備</Btn>}
+                  {it.slot && (() => { const r = E.equipReason(ch.classId, id); return <Btn disabled={!!r} title={r || ''} onClick={() => apply(d => E.equipItem(d, active, id))}>裝備{r ? ' 🚫' : ''}</Btn>; })()}
                 </div>
               );
             })}

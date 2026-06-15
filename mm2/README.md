@@ -6,9 +6,9 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 5 — MM2-style interface.** The party now lives in a right-hand roster of
-> EGA standing figures (paper-doll style), closer to the original game's layout. Content stays
-> fully data-driven, so the world keeps growing toward a fuller MM2.
+> Status: **Milestone 6 — depth pass.** Combat visual effects, two more towns, equipment class
+> restrictions, training, traps, and equipment/race-reactive figures. Content stays fully
+> data-driven, so the world keeps growing toward a fuller MM2.
 
 ### Faithful-to-MM2 touches
 
@@ -63,6 +63,22 @@ A complete playthrough loop exercising every major system:
   Restore, Smite, Greater Protection, Sunray.
 - **Two new quests** across Atlantium (Crown of the Deep, the Ancient Scroll) that grant gear
   and teach a spell.
+
+### Milestone 6 — combat FX, more towns & system depth
+
+- **Combat visual effects** — the engine queues `CombatFx` events (hit/crit/spell/heal/death/
+  party-hit) that the UI animates over the combat canvas with an rAF loop: impact bursts,
+  element-coloured spell flashes, death puffs, and edge flashes when the party is hit or healed.
+- **Two more towns** — Murkmire and Cliffport (six towns total), each with shops and a bounty
+  quest, on the same overworld.
+- **Equipment class restrictions** — sorcerers are limited to daggers/staves and light armour,
+  clerics can't wield blades, heavy plate needs a fighter class. The sheet and shop disable
+  items that a character can't use.
+- **Training grounds** — a town service that permanently raises an attribute for gold
+  (a gold sink), recomputing HP/SP.
+- **Traps** — dungeon trap tiles and trapped chests damage the whole party.
+- **Equipment/race-reactive figures** — the standing figures now retint by equipped armour and
+  weapon and by race, so upgrades visibly change a character's look.
 
 ### Milestone 5 — MM2-style party interface
 

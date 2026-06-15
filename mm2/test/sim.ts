@@ -300,5 +300,44 @@ assert(E.npcEntryNode(skm, 'astronomer') === 'reward', 'astronomer ready with th
 E.applyDialogAction(skm, { completeQuest: 'sky_quest', teachSpell: 'lightning' });
 assert(astro[0].spells.includes('lightning'), 'sky quest teaches Lightning Bolt');
 
+// 17) Milestone 6 — towns, equip restrictions, training, traps
+console.log('Milestone 6:');
+const m6 = E.newGame();
+const m6p = [E.makeCharacter(0, 'K', 'human', 'knight'), E.makeCharacter(1, 'M', 'elf', 'sorcerer')];
+for (const c of m6p) { c.level = 10; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp; }
+E.startAdventure(m6, m6p);
+// new towns reachable via portals
+m6.screen = 'overworld'; m6.pos = { mapId: 'overworld', x: 2, y: 7, dir: 1 }; E.enterCell(m6);
+assert(m6.townId === 'murkmire' && m6.screen === 'town', 'Murkmire portal sets town');
+m6.screen = 'overworld'; m6.pos = { mapId: 'overworld', x: 16, y: 4, dir: 1 }; E.enterCell(m6);
+assert(m6.townId === 'cliffport', 'Cliffport portal sets town');
+assert(townMap['murkmire'] && townMap['cliffport'], 'six towns total');
+
+// equip restrictions
+assert(E.equipReason('sorcerer', 'plate') !== null, 'sorcerer cannot wear plate');
+assert(E.equipReason('knight', 'plate') === null, 'knight can wear plate');
+assert(E.equipReason('sorcerer', 'dagger') === null, 'sorcerer can wield a dagger');
+assert(E.equipReason('cleric', 'long_sword') !== null, 'cleric cannot wield a blade');
+m6.backpack.push('plate');
+E.equipItem(m6, 1, 'plate'); // sorcerer
+assert(m6.party[1].equipment.armor !== 'plate', 'restricted item is not equipped');
+
+// training raises an attribute for gold
+const mightBefore = m6.party[0].attrs.might;
+m6.gold = 5000;
+E.trainAttr(m6, 0, 'might');
+assert(m6.party[0].attrs.might === mightBefore + 1, 'training raises an attribute');
+
+// trap damages the party
+const tr = E.newGame();
+const trp = [E.makeCharacter(0, 'A', 'human', 'knight')];
+for (const c of trp) { c.level = 20; E.recompute(c); c.hp = c.maxHp; }
+E.startAdventure(tr, trp);
+tr.screen = 'dungeon'; tr.pos = { mapId: 'dungeon2', x: 3, y: 2, dir: 2 };
+const hpBefore = tr.party[0].hp;
+E.tryStep(tr, 3, 3); // trap cell
+assert(tr.party[0].hp < hpBefore, 'stepping on a trap damages the party');
+assert(tr.triggeredTraps.includes('dungeon2:3,3'), 'trap recorded as triggered');
+
 console.log('\n' + (failures === 0 ? '✅ ALL SIM CHECKS PASSED' : `❌ ${failures} CHECK(S) FAILED`));
 if (failures > 0) process.exit(1);

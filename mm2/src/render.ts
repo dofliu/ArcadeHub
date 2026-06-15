@@ -262,6 +262,71 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
   egaPost(ctx);
 }
 
+// Screen position of monster `i`, matching drawCombat's layout.
+export function monsterScreenPos(combat: GameState['combat'], i: number) {
+  const n = combat!.monsters.length;
+  const cols = Math.min(n, 6);
+  const row = Math.floor(i / cols);
+  const inRow = Math.min(cols, n - row * cols);
+  const idxInRow = i % cols;
+  const spread = CW / (inRow + 1);
+  return { mx: spread * (idxInRow + 1), my: CH * 0.32 + row * 70 };
+}
+
+const ELEMENT_COLOR: Record<string, string> = {
+  fire: '#FF5555', cold: '#55FFFF', shock: '#FFFF55', holy: '#FFFFFF', poison: '#55FF55', energy: '#FF55FF',
+};
+
+export interface ActiveFx { kind: string; side: string; idx: number; element?: string; age: number; } // age 0..1
+
+// Draw combat effects on top of the (already EGA'd) combat scene.
+export function drawFx(ctx: CanvasRenderingContext2D, g: GameState, effects: ActiveFx[]) {
+  if (!g.combat) return;
+  for (const e of effects) {
+    const fade = 1 - e.age;
+    if (e.side === 'party') {
+      ctx.globalAlpha = fade * 0.4;
+      ctx.fillStyle = e.kind === 'heal' ? '#55FF55' : '#FF5555';
+      const t = 8;
+      ctx.fillRect(0, 0, CW, t); ctx.fillRect(0, CH - t, CW, t);
+      ctx.fillRect(0, 0, t, CH); ctx.fillRect(CW - t, 0, t, CH);
+      ctx.globalAlpha = 1;
+      continue;
+    }
+    const { mx, my } = monsterScreenPos(g.combat, e.idx);
+    ctx.globalAlpha = fade;
+    if (e.kind === 'hit' || e.kind === 'crit') {
+      const big = e.kind === 'crit';
+      ctx.strokeStyle = big ? '#FFFF55' : '#FFFFFF';
+      ctx.lineWidth = big ? 3 : 2;
+      const r = (big ? 34 : 22) * (0.4 + e.age * 1.2);
+      ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI * 2); ctx.stroke();
+      const spikes = big ? 8 : 6;
+      for (let k = 0; k < spikes; k++) {
+        const a = (Math.PI * 2 * k) / spikes;
+        ctx.beginPath();
+        ctx.moveTo(mx + Math.cos(a) * r * 0.5, my + Math.sin(a) * r * 0.5);
+        ctx.lineTo(mx + Math.cos(a) * r, my + Math.sin(a) * r);
+        ctx.stroke();
+      }
+    } else if (e.kind === 'spell') {
+      const col = ELEMENT_COLOR[e.element || ''] || '#FFFFFF';
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(mx, my, 28 * (1 - e.age * 0.4), 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(mx, my, 14 + e.age * 26, 0, Math.PI * 2); ctx.stroke();
+    } else if (e.kind === 'death') {
+      ctx.fillStyle = '#AAAAAA';
+      const r = 10 + e.age * 24;
+      for (let k = 0; k < 6; k++) {
+        const a = (Math.PI * 2 * k) / 6;
+        ctx.fillRect(mx + Math.cos(a) * r - 2, my + Math.sin(a) * r - 2, 4, 4);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
 export function drawTitle(ctx: CanvasRenderingContext2D) {
   const grad = ctx.createLinearGradient(0, 0, 0, CH);
   grad.addColorStop(0, '#1a1330');

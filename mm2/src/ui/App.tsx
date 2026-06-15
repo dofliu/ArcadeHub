@@ -2,11 +2,11 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { GameState } from '../types';
 import * as E from '../engine';
 import { mapMap, questMap } from '../data/content';
-import { drawDungeon, drawOverworld, drawCombat, drawTitle, CW, CH } from '../render';
+import { drawDungeon, drawOverworld, drawCombat, drawTitle, drawFx, CW, CH } from '../render';
 import { soundService, Sfx } from '../sound';
 import { Btn, Panel, PartyPanel } from './common';
 import {
-  CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen, HireScreen,
+  CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen, HireScreen, TrainScreen,
 } from './screens';
 import {
   ArrowUp, ArrowDown, RotateCcw, RotateCw, ArrowLeft, ArrowRight, Save, FolderOpen,
@@ -86,6 +86,30 @@ export const App: React.FC = () => {
   }, [g.screen, move, turn, moveOver]);
 
   // ----- canvas -----
+  const gRef = useRef(g);
+  gRef.current = g;
+  const fxRef = useRef<{ kind: string; side: string; idx: number; element?: string; start: number }[]>([]);
+  const rafRef = useRef(0);
+  const FX_DUR = 380;
+
+  const runFxLoop = useCallback(() => {
+    if (rafRef.current) return;
+    const step = () => {
+      const cv = canvasRef.current;
+      const cur = gRef.current;
+      if (!cv || cur.screen !== 'combat') { rafRef.current = 0; fxRef.current = []; return; }
+      const ctx = cv.getContext('2d');
+      if (!ctx) { rafRef.current = 0; return; }
+      const now = performance.now();
+      fxRef.current = fxRef.current.filter(e => now - e.start < FX_DUR);
+      drawCombat(ctx, cur);
+      drawFx(ctx, cur, fxRef.current.map(e => ({ ...e, age: (now - e.start) / FX_DUR })));
+      if (fxRef.current.length > 0) { rafRef.current = requestAnimationFrame(step); }
+      else { rafRef.current = 0; }
+    };
+    rafRef.current = requestAnimationFrame(step);
+  }, []);
+
   useEffect(() => {
     const cv = canvasRef.current;
     if (!cv) return;
@@ -96,6 +120,17 @@ export const App: React.FC = () => {
     else if (g.screen === 'overworld') drawOverworld(ctx, g);
     else drawTitle(ctx);
   }, [g]);
+
+  // flush queued combat FX -> animate
+  useEffect(() => {
+    if (g.fx.length === 0) return;
+    const now = performance.now();
+    for (const f of g.fx) fxRef.current.push({ ...f, start: now });
+    apply(d => { d.fx = []; });
+    runFxLoop();
+  }, [g.fx, apply, runFxLoop]);
+
+  useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
 
   const showCanvas = ['title', 'overworld', 'dungeon', 'combat', 'victory', 'gameover'].includes(g.screen);
   const isExplore = g.screen === 'overworld' || g.screen === 'dungeon';
@@ -199,6 +234,7 @@ export const App: React.FC = () => {
         {g.screen === 'sheet' && <SheetScreen g={g} apply={apply} active={sheetActive} setActive={setSheetActive} />}
         {g.screen === 'quests' && <QuestLogScreen g={g} apply={apply} />}
         {g.screen === 'hire' && <HireScreen g={g} apply={apply} />}
+        {g.screen === 'train' && <TrainScreen g={g} apply={apply} active={sheetActive} setActive={setSheetActive} />}
         {g.screen === 'combat' && <CombatPanel g={g} apply={apply} />}
 
         {/* Explore movement controls */}

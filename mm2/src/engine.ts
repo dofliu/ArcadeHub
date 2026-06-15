@@ -137,6 +137,10 @@ export function toast(g: GameState, m: string) {
 export function playSfx(g: GameState, name: string) {
   g.sfx = [...g.sfx, name].slice(-12);
 }
+// Queue a combat visual effect for the UI to animate.
+export function playFx(g: GameState, kind: import('./types').CombatFx['kind'], side: 'monster' | 'party', idx: number, element?: string) {
+  g.fx = [...g.fx, { kind, side, idx, element }].slice(-16);
+}
 
 export const hasItem = (g: GameState, id: string) => g.backpack.includes(id);
 export const aliveParty = (g: GameState) => g.party.filter(c => c.condition === 'ok' && c.hp > 0);
@@ -159,12 +163,14 @@ export function newGame(): GameState {
     clearedEncounters: [],
     lootedChests: [],
     openedDoors: [],
+    triggeredTraps: [],
     combat: null,
     dialog: null,
     shopId: null,
     log: ['克朗大陸的命運，掌握在你的隊伍手中…'],
     messages: [],
     sfx: [],
+    fx: [],
   };
 }
 
@@ -251,6 +257,17 @@ export function enterCell(g: GameState) {
     return;
   }
 
+  const trap = map.traps?.[key];
+  if (trap && !g.triggeredTraps.includes(gkey)) {
+    g.triggeredTraps = [...g.triggeredTraps, gkey];
+    const dmg = roll(trap.damage);
+    g.party.forEach(p => { if (p.condition === 'ok' && p.hp > 0) { p.hp = Math.max(0, p.hp - dmg); if (p.hp === 0) { p.condition = 'unconscious'; } } });
+    pushLog(g, `💥 ${trap.text || '陷阱觸發！'} 全隊受到 ${dmg} 傷害。`);
+    toast(g, `💥 陷阱！-${dmg} HP`);
+    playSfx(g, 'hurt');
+    if (g.party.every(p => p.condition !== 'ok' || p.hp <= 0)) { g.screen = 'gameover'; playSfx(g, 'defeat'); return; }
+  }
+
   const enc = map.encounters?.[key];
   if (enc && !g.clearedEncounters.includes(gkey)) {
     startCombat(g, gkey, enc, map.id);
@@ -277,22 +294,72 @@ function lootChest(g: GameState, gkey: string, chest: ChestDef) {
       parts.push(itemMap[it]?.name || it);
     }
   }
+  if (chest.trapped && Math.random() < 0.6) {
+    const dmg = rint(6, 16);
+    g.party.forEach(p => { if (p.condition === 'ok' && p.hp > 0) { p.hp = Math.max(0, p.hp - dmg); if (p.hp === 0) p.condition = 'unconscious'; } });
+    pushLog(g, `🪤 寶箱有陷阱！全隊受到 ${dmg} 傷害。`);
+    playSfx(g, 'hurt');
+  }
   pushLog(g, `💰 寶箱：獲得 ${parts.join('、') || '空空如也'}`);
   toast(g, `獲得 ${parts.join('、')}`);
   playSfx(g, 'chest');
   if (chest.gold) playSfx(g, 'gold');
 }
 
+// ---------- equipment restrictions ----------
+const HEAVY_ARMOR = new Set(['plate', 'splint_mail', 'scale_mail', 'dragon_plate', 'mithril_plate']);
+const MED_ARMOR = new Set(['chain', 'ring_mail']);
+const HEAVY_FIGHTERS = new Set(['knight', 'paladin', 'barbarian']);
+const SORC_WEAPONS = new Set(['dagger', 'war_staff']);
+const BLADED = new Set(['short_sword', 'long_sword', 'two_handed_sword', 'katana', 'battle_axe', 'halberd', 'dragon_blade', 'storm_blade', 'great_axe']);
+
+// Returns null if equippable, otherwise a reason string.
+export function equipReason(classId: string, itemId: string): string | null {
+  const def = itemMap[itemId];
+  if (!def || !def.slot) return '無法裝備';
+  if (def.slot === 'armor') {
+    if (HEAVY_ARMOR.has(itemId) && !HEAVY_FIGHTERS.has(classId)) return '太重，需戰士類職業';
+    if (MED_ARMOR.has(itemId) && classId === 'sorcerer') return '法師無法穿著';
+  }
+  if (def.slot === 'weapon') {
+    if (classId === 'sorcerer' && !SORC_WEAPONS.has(itemId)) return '法師只能用匕首或法杖';
+    if (classId === 'cleric' && BLADED.has(itemId)) return '牧師不可使用利刃';
+  }
+  return null;
+}
+export const canEquip = (classId: string, itemId: string) => equipReason(classId, itemId) === null;
+
 // ---------- inventory ----------
 export function equipItem(g: GameState, charIdx: number, itemId: string) {
   const def = itemMap[itemId];
   if (!def || !def.slot) return;
   const ch = g.party[charIdx];
+  const reason = equipReason(ch.classId, itemId);
+  if (reason) { toast(g, `${classMap[ch.classId].name}：${reason}`); return; }
   const cur = ch.equipment[def.slot];
   ch.equipment[def.slot] = itemId;
   g.backpack.splice(g.backpack.indexOf(itemId), 1);
   if (cur) g.backpack.push(cur);
   pushLog(g, `${ch.name} 裝備了 ${def.name}。`);
+}
+
+// ---------- training (gold sink at the Inn) ----------
+export const ATTR_KEYS_ALL = ['might', 'intellect', 'personality', 'endurance', 'speed', 'accuracy', 'luck'] as const;
+export const trainCost = (value: number) => value * 25;
+export function trainAttr(g: GameState, charIdx: number, attr: AttrKey): boolean {
+  const ch = g.party[charIdx];
+  const v = ch.attrs[attr];
+  if (v >= 25) { toast(g, '已達訓練上限'); return false; }
+  const cost = trainCost(v);
+  if (g.gold < cost) { toast(g, '金幣不足'); return false; }
+  g.gold -= cost;
+  ch.attrs[attr] = v + 1;
+  recompute(ch);
+  ch.hp = Math.min(ch.maxHp, ch.hp);
+  ch.sp = Math.min(ch.maxSp, ch.sp);
+  pushLog(g, `🏋 ${ch.name} 訓練了「${attr}」(+1)。`);
+  playSfx(g, 'levelup');
+  return true;
 }
 
 export function unequipItem(g: GameState, charIdx: number, slot: EquipSlot) {
@@ -535,12 +602,14 @@ export function combatAttack(g: GameState, monsterIdx: number) {
     const crit = Math.random() < critChance(actor);
     if (crit || hit === 20) dmg = Math.round(dmg * 2);
     const dealt = applyDamageToMonster(g, monsterIdx, dmg);
-    pushLog(g, `${actor.name} ${crit || hit === 20 ? '暴擊' : '命中'} ${def.name}，造成 ${dealt} 傷害。`);
-    playSfx(g, crit || hit === 20 ? 'crit' : 'hit');
+    const big = crit || hit === 20;
+    pushLog(g, `${actor.name} ${big ? '暴擊' : '命中'} ${def.name}，造成 ${dealt} 傷害。`);
+    playSfx(g, big ? 'crit' : 'hit');
+    playFx(g, big ? 'crit' : 'hit', 'monster', monsterIdx);
     if (classMap[actor.classId].id === 'robber' && Math.random() < 0.5) {
       const g2 = rint(3, 12); g.gold += g2; pushLog(g, `🪙 ${actor.name} 偷取了 ${g2} 金幣。`);
     }
-    if (m.hp <= 0) { pushLog(g, `${def.name} 被擊倒！`); playSfx(g, 'enemy_die'); }
+    if (m.hp <= 0) { pushLog(g, `${def.name} 被擊倒！`); playSfx(g, 'enemy_die'); playFx(g, 'death', 'monster', monsterIdx); }
   } else {
     pushLog(g, `${actor.name} 未能突破 ${def.name} 的防禦。`);
     playSfx(g, 'attack');
@@ -563,6 +632,8 @@ export function combatCast(g: GameState, spellId: string, targetIdx: number) {
         if (m.hp > 0) {
           applyDamageToMonster(g, i, base + rnd(5), sp.element);
           if (sp.element === 'poison') { m.status = m.status || {}; m.status.poison = Math.max(m.status.poison || 0, 3); }
+          playFx(g, 'spell', 'monster', i, sp.element);
+          if (m.hp <= 0) playFx(g, 'death', 'monster', i);
         }
       });
       pushLog(g, `🔮 ${actor.name} 施放 ${sp.name}，席捲全體敵人！`);
@@ -572,6 +643,8 @@ export function combatCast(g: GameState, spellId: string, targetIdx: number) {
       if (i >= 0) {
         const dealt = applyDamageToMonster(g, i, base + rnd(5), sp.element);
         if (sp.element === 'poison') { const m = c.monsters[i]; m.status = m.status || {}; m.status.poison = Math.max(m.status.poison || 0, 3); }
+        playFx(g, 'spell', 'monster', i, sp.element);
+        if (c.monsters[i].hp <= 0) playFx(g, 'death', 'monster', i);
         pushLog(g, `🔮 ${actor.name} 對 ${monsterMap[c.monsters[i].defId].name} 施放 ${sp.name}，造成 ${dealt} 傷害。`);
       }
     }
@@ -579,10 +652,11 @@ export function combatCast(g: GameState, spellId: string, targetIdx: number) {
     const t = g.party[targetIdx] || actor;
     if (t.hp <= 0) t.condition = 'ok';
     t.hp = Math.min(t.maxHp, t.hp + sp.power + cm * 2);
+    playFx(g, 'heal', 'party', targetIdx >= 0 ? targetIdx : 0);
     pushLog(g, `✨ ${actor.name} 治療了 ${t.name}。`);
   } else if (sp.kind === 'partyHeal') {
     const amt = sp.power + cm * 2;
-    g.party.forEach(p => { if (p.condition === 'ok') p.hp = Math.min(p.maxHp, p.hp + amt); });
+    g.party.forEach((p, pi) => { if (p.condition === 'ok') { p.hp = Math.min(p.maxHp, p.hp + amt); playFx(g, 'heal', 'party', pi); } });
     pushLog(g, `✨ ${actor.name} 施放 ${sp.name}，全隊回復 ${amt} 生命。`);
   } else if (sp.kind === 'haste') {
     g.party.forEach(p => { if (p.condition === 'ok') p.buffSpeed = (p.buffSpeed || 0) + sp.power; });
@@ -660,6 +734,7 @@ function monsterAct(g: GameState, mIdx: number) {
     const sp = spellMap[def.spellId];
     const dmg = sp.power + rnd(6);
     damageChar(g, target.p, dmg);
+    playFx(g, 'partyhit', 'party', target.i, sp.element);
     pushLog(g, `${def.name} 施放 ${sp.name}，${target.p.name} 受到 ${dmg} 傷害。`);
     return;
   }
@@ -668,6 +743,7 @@ function monsterAct(g: GameState, mIdx: number) {
   if (hit === 20 || hit + def.attack >= defenseOf(target.p)) {
     const dmg = roll(def.dmg);
     damageChar(g, target.p, dmg);
+    playFx(g, 'partyhit', 'party', target.i);
     pushLog(g, `${def.name} 攻擊 ${target.p.name}，造成 ${dmg} 傷害。`);
     // chance to inflict an ailment
     if (def.inflicts && target.p.condition === 'ok') {
