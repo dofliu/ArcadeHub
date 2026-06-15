@@ -4,13 +4,14 @@ import * as E from '../engine';
 import { mapMap, questMap } from '../data/content';
 import { drawDungeon, drawOverworld, drawCombat, drawTitle, drawFx, CW, CH } from '../render';
 import { soundService, Sfx } from '../sound';
+import { musicService, trackForScreen } from '../music';
 import { Btn, Panel, PartyPanel } from './common';
 import {
   CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen, HireScreen, TrainScreen, SavesScreen,
 } from './screens';
 import {
   ArrowUp, ArrowDown, RotateCcw, RotateCw, ArrowLeft, ArrowRight, Save, FolderOpen,
-  Coins, CalendarDays, Backpack, Skull, Trophy, ScrollText, Volume2, VolumeX, MonitorCog,
+  Coins, CalendarDays, Backpack, Skull, Trophy, ScrollText, Volume2, VolumeX, MonitorCog, Music, Music2,
 } from 'lucide-react';
 
 const DIRV = [
@@ -22,13 +23,23 @@ export const App: React.FC = () => {
   const [sheetActive, setSheetActive] = useState(0);
   const [soundOn, setSoundOn] = useState(() => E.loadSettings()?.sound ?? true);
   const [vga, setVga] = useState(() => E.loadSettings()?.vga ?? true);
+  const [musicOn, setMusicOn] = useState(() => E.loadSettings()?.music ?? true);
   const vgaRef = useRef(vga);
   vgaRef.current = vga;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // remember display/sound preferences
-  useEffect(() => { soundService.setEnabled(soundOn); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { E.saveSettings({ vga, sound: soundOn }); }, [vga, soundOn]);
+  // remember display/sound/music preferences
+  useEffect(() => { soundService.setEnabled(soundOn); musicService.setEnabled(musicOn); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { E.saveSettings({ vga, sound: soundOn, music: musicOn }); }, [vga, soundOn, musicOn]);
+  // switch background track per screen
+  useEffect(() => { musicService.play(trackForScreen(g.screen)); }, [g.screen]);
+  // browsers block audio until a gesture — resume on first interaction
+  useEffect(() => {
+    const resume = () => { soundService.play('select'); musicService.resume(); };
+    window.addEventListener('pointerdown', resume, { once: true });
+    window.addEventListener('keydown', resume, { once: true });
+    return () => { window.removeEventListener('pointerdown', resume); window.removeEventListener('keydown', resume); };
+  }, []);
 
   const apply = useCallback((fn: (d: GameState) => void) => {
     setG(prev => { const d = E.clone(prev); fn(d); return d; });
@@ -167,7 +178,8 @@ export const App: React.FC = () => {
           </div>
         )}
         <div className="ml-auto flex gap-2">
-          <Btn onClick={toggleSound} title={soundOn ? '靜音' : '開啟音效'}>{soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}</Btn>
+          <Btn onClick={toggleSound} title={soundOn ? '音效：開' : '音效：關'}>{soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}</Btn>
+          <Btn onClick={() => { musicService.resume(); setMusicOn(v => { musicService.setEnabled(!v); if (!v) musicService.play(trackForScreen(g.screen)); return !v; }); }} title={musicOn ? '音樂：開' : '音樂：關'}>{musicOn ? <Music size={16} /> : <Music2 size={16} className="opacity-40" />}</Btn>
           <Btn onClick={() => setVga(v => !v)} title="切換畫面模式 VGA/EGA"><MonitorCog size={16} /><span className="ml-1 text-[10px]">{vga ? 'VGA' : 'EGA'}</span></Btn>
           {g.party.length > 0 && g.screen !== 'create' && (
             <>

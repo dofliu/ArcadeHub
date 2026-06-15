@@ -438,6 +438,15 @@ export function startCombat(g: GameState, encKey: string, enc: EncounterDef, map
       monsters.push({ uid: uid++, defId: grp.id, hp: def.hp, maxHp: def.hp, status: {} });
     }
   }
+  // balance: scale non-boss packs up with a larger party so fights stay meaningful
+  if (!enc.boss) {
+    const extra = Math.max(0, Math.floor((aliveParty(g).length - 4) / 2));
+    for (let e = 0; e < extra && monsters.length < 8; e++) {
+      const grp = enc.monsters[e % enc.monsters.length];
+      const def = monsterMap[grp.id];
+      monsters.push({ uid: uid++, defId: grp.id, hp: def.hp, maxHp: def.hp, status: {} });
+    }
+  }
   g.combat = {
     monsters, order: [], turn: 0, round: 1, cell: encKey, mapId,
     boss: !!enc.boss, bossItem: enc.bossItem, bossFlag: enc.bossFlag, awaitingTarget: null,
@@ -991,7 +1000,7 @@ export function clearSave(slot?: SaveSlot) {
 }
 
 // ---------- settings memory ----------
-export interface Settings { vga: boolean; sound: boolean; }
+export interface Settings { vga: boolean; sound: boolean; music?: boolean; }
 export function loadSettings(): Settings | null {
   try { const raw = localStorage.getItem('mm2_settings'); return raw ? JSON.parse(raw) as Settings : null; } catch { return null; }
 }

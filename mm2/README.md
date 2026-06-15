@@ -6,9 +6,9 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 11 — feel & persistence.** Monster lunge animations, more detailed foe
-> sprites, per-dungeon atmosphere (cavern crystals/drips, sky orbs/sparkles), and multi-slot
-> saves with remembered display/sound settings. Content stays fully data-driven.
+> Status: **Milestone 12 — content, balance & music.** A new Volcanic Depths dungeon + quest,
+> party-size combat scaling, and an original procedural chiptune soundtrack. Content stays fully
+> data-driven.
 
 ### Faithful-to-MM2 touches
 
@@ -71,6 +71,18 @@ A complete playthrough loop exercising every major system:
   shortcut hint shows in the action panel — fully playable without the mouse.
 - The on-screen movement pad is hidden on desktop (arrow keys handle movement) so the message log
   has room; it still appears on touch screens.
+
+### Milestone 12 — content, balance & music
+
+- **Volcanic Depths** — a new two-level dungeon (volcano theme: dark-red stone, rising embers,
+  lava sheen), gated by a Forge Key, ending in the **Magma Lord** boss who guards the Ember Heart.
+  New foes (fire imp, lava hound, magma golem, magma lord) and a Vulcania quest from the
+  Forgemaster that rewards the Inferno Axe.
+- **Combat balance** — non-boss packs scale up with a larger party (up to 8), so a full roster
+  still gets a real fight.
+- **Original chiptune music** (`src/music.ts`) — a tiny Web Audio synth playing original looping
+  tracks (title / town / exploration / combat / victory) that switch with the screen. No samples,
+  no copied tunes; a header toggle and remembered preference.
 
 ### Milestone 11 — feel & persistence
 
