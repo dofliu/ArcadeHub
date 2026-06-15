@@ -1,7 +1,7 @@
 // ===== All canvas rendering =====
 import { GameState } from './types';
 import { mapMap, monsterMap } from './data/content';
-import { MONSTER_SPRITES, drawSprite, EGA } from './sprites';
+import { MONSTER_SPRITES, drawSprite, drawSilhouette, charSpriteRows, EGA } from './sprites';
 
 export const CW = 560;
 export const CH = 360;
@@ -141,6 +141,44 @@ function viewFrame(ctx: CanvasRenderingContext2D) {
   ctx.strokeRect(7, 7, CW - 14, CH - 14);
 }
 
+// Soft darkening toward the edges.
+function vignette(ctx: CanvasRenderingContext2D, strength = 0.5) {
+  const grad = ctx.createRadialGradient(CX, CY * 1.05, CH * 0.25, CX, CY, CH * 0.78);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, `rgba(0,0,0,${strength})`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, CW, CH);
+}
+
+// A wall torch with a warm additive glow.
+function torch(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
+  // glow
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const gr = ctx.createRadialGradient(x, y, 2, x, y, 60 * s);
+  gr.addColorStop(0, 'rgba(255,180,70,0.55)');
+  gr.addColorStop(0.5, 'rgba(255,120,30,0.18)');
+  gr.addColorStop(1, 'rgba(255,90,20,0)');
+  ctx.fillStyle = gr;
+  ctx.beginPath(); ctx.arc(x, y, 60 * s, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  // bracket + flame
+  ctx.fillStyle = '#3a2a18'; ctx.fillRect(x - 2 * s, y, 4 * s, 16 * s);
+  ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.ellipse(x, y - 4 * s, 4 * s, 8 * s, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ff7b1a'; ctx.beginPath(); ctx.ellipse(x, y - 2 * s, 2.5 * s, 5 * s, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff3c4'; ctx.beginPath(); ctx.ellipse(x, y - 4 * s, 1.4 * s, 3 * s, 0, 0, Math.PI * 2); ctx.fill();
+}
+
+// Draw a monster sprite with a 1px dark outline for a cleaner, designed look.
+function outlinedSprite(ctx: CanvasRenderingContext2D, rows: string[], cx: number, baseY: number, px: number) {
+  const o = '#0a0810';
+  drawSilhouette(ctx, rows, cx - px, baseY, px, o);
+  drawSilhouette(ctx, rows, cx + px, baseY, px, o);
+  drawSilhouette(ctx, rows, cx, baseY - px, px, o);
+  drawSilhouette(ctx, rows, cx, baseY + px, px, o);
+  drawSprite(ctx, rows, cx, baseY, px);
+}
+
 export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState, vga = true) {
   const map = mapMap[g.pos.mapId];
   const grid = map.grid;
@@ -203,6 +241,12 @@ export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState, vga = t
     else if (map.encounters?.[fkey] && !g.clearedEncounters.includes(gkey)) marker(ctx, far, '#9b2226');
     cx = fx; cy = fy;
   }
+  // wall torches on the nearest solid side walls
+  const nearL = isSolid(grid, g.pos.x + left.x, g.pos.y + left.y);
+  const nearR = isSolid(grid, g.pos.x + right.x, g.pos.y + right.y);
+  if (lit || nearL) { if (nearL) torch(ctx, CW * 0.05, CH * 0.42, 1); }
+  if (lit || nearR) { if (nearR) torch(ctx, CW * 0.95, CH * 0.42, 1); }
+  vignette(ctx, lit ? 0.32 : 0.55);
   if (!vga) egaPost(ctx);
   viewFrame(ctx);
 }
@@ -262,6 +306,8 @@ export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState, vga =
   for (const [key, portal] of Object.entries(map.portals || {})) {
     const [px, py] = key.split(',').map(Number);
     const tx = ox + px * tile, ty = oy + py * tile, T = tile;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(tx + T / 2, ty + T * 0.86, T * 0.32, T * 0.09, 0, 0, Math.PI * 2); ctx.fill();
     if (portal.toScreen === 'town') {
       ctx.fillStyle = '#caa45a'; ctx.fillRect(tx + T * 0.2, ty + T * 0.45, T * 0.6, T * 0.4); // wall
       ctx.fillStyle = '#9b2226'; ctx.beginPath(); ctx.moveTo(tx + T * 0.12, ty + T * 0.45); ctx.lineTo(tx + T / 2, ty + T * 0.18); ctx.lineTo(tx + T * 0.88, ty + T * 0.45); ctx.closePath(); ctx.fill(); // roof
@@ -278,16 +324,19 @@ export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState, vga =
     ctx.fillStyle = '#9b2226';
     ctx.beginPath(); ctx.arc(ox + px * tile + tile / 2, oy + py * tile + tile / 2, tile * 0.18, 0, Math.PI * 2); ctx.fill();
   }
-  // party
+  // party — the leader's figure stands on the tile
   const cxp = ox + g.pos.x * tile + tile / 2;
   const cyp = oy + g.pos.y * tile + tile / 2;
   const d = DIRV[g.pos.dir];
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath(); ctx.ellipse(cxp, cyp + tile * 0.42, tile * 0.3, tile * 0.1, 0, 0, Math.PI * 2); ctx.fill();
+  const leader = g.party[0];
+  if (leader) {
+    const lp = Math.max(1, Math.round(tile / 11));
+    drawSprite(ctx, charSpriteRows(leader.classId, { raceId: leader.raceId, weaponId: leader.equipment.weapon, armorId: leader.equipment.armor }), cxp, cyp + tile * 0.48, lp);
+  }
   ctx.fillStyle = '#4cc9f0';
-  ctx.beginPath();
-  ctx.moveTo(cxp + d.x * tile * 0.35, cyp + d.y * tile * 0.35);
-  ctx.lineTo(cxp - d.x * tile * 0.3 + d.y * tile * 0.25, cyp - d.y * tile * 0.3 + d.x * tile * 0.25);
-  ctx.lineTo(cxp - d.x * tile * 0.3 - d.y * tile * 0.25, cyp - d.y * tile * 0.3 - d.x * tile * 0.25);
-  ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.arc(cxp + d.x * tile * 0.42, cyp + d.y * tile * 0.42, tile * 0.09, 0, Math.PI * 2); ctx.fill();
   ctx.textAlign = 'start';
   if (!vga) egaPost(ctx);
   viewFrame(ctx);
@@ -309,8 +358,10 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = tr
   ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1; ctx.beginPath();
   for (const x of [CW * 0.1, CW * 0.3, CW * 0.7, CW * 0.9]) { ctx.moveTo(x, CH); ctx.lineTo(CX, floorY); }
   ctx.stroke();
+  torch(ctx, CW * 0.11, floorY * 0.42, 1.1);
+  torch(ctx, CW * 0.89, floorY * 0.42, 1.1);
   const c = g.combat;
-  if (!c) { if (!vga) egaPost(ctx); viewFrame(ctx); return; }
+  if (!c) { vignette(ctx, 0.45); if (!vga) egaPost(ctx); viewFrame(ctx); return; }
   const n = c.monsters.length;
   c.monsters.forEach((m, i) => {
     const def = monsterMap[m.defId];
@@ -337,7 +388,7 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = tr
       ctx.fill();
       ctx.restore();
       ctx.globalAlpha = dead ? 0.2 : 1;
-      drawSprite(ctx, sprite, mx, baseY, px);
+      outlinedSprite(ctx, sprite, mx, baseY, px);
     } else {
       // fallback blob for any monster without a sprite yet
       ctx.fillStyle = def.color;
@@ -366,6 +417,7 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = tr
       }
     }
   });
+  vignette(ctx, 0.42);
   ctx.fillStyle = '#4cc9f0';
   ctx.font = '13px monospace';
   ctx.fillText(`ROUND ${c.round}`, 12, 22);

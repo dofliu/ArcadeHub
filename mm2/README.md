@@ -6,10 +6,9 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 8 — VGA render.** The harsh EGA quantisation that flattened detail is gone;
-> scenes now render in full colour with smooth warm-stone shading, beveled bricks, perspective
-> floors, richer overworld terrain and bigger monster sprites. A header toggle switches between
-> VGA (default) and the old EGA look. Content stays fully data-driven.
+> Status: **Milestone 9 — visual polish.** Wall torches with warm glow, edge vignettes, outlined
+> monster sprites, and overworld shadows with the leader's figure as the party marker. Content
+> stays fully data-driven.
 
 ### Faithful-to-MM2 touches
 
@@ -64,6 +63,14 @@ A complete playthrough loop exercising every major system:
   Restore, Smite, Greater Protection, Sunray.
 - **Two new quests** across Atlantium (Crown of the Deep, the Ancient Scroll) that grant gear
   and teach a spell.
+
+### Milestone 9 — visual polish
+
+- **Wall torches** with warm additive glow light the dungeon and combat chambers.
+- **Edge vignettes** focus the eye and add depth.
+- **Outlined monster sprites** (1px dark silhouette) read more cleanly against the room.
+- **Overworld** gets ground shadows under buildings, and the party marker is now the **party
+  leader's EGA figure** standing on the tile (with a facing dot) instead of a plain triangle.
 
 ### Milestone 8 — VGA render
 
