@@ -95,20 +95,30 @@ export const App: React.FC = () => {
   const rafRef = useRef(0);
   const FX_DUR = 380;
 
-  const runFxLoop = useCallback(() => {
+  // Ambient animation loop: keeps torches flickering (and combat FX playing)
+  // while in the dungeon or combat. Throttled to ~30fps; self-stops elsewhere.
+  const lastDrawRef = useRef(0);
+  const runAmbient = useCallback(() => {
     if (rafRef.current) return;
-    const step = () => {
+    const step = (ts: number) => {
       const cv = canvasRef.current;
       const cur = gRef.current;
-      if (!cv || cur.screen !== 'combat') { rafRef.current = 0; fxRef.current = []; return; }
+      if (!cv || (cur.screen !== 'combat' && cur.screen !== 'dungeon')) { rafRef.current = 0; fxRef.current = []; return; }
       const ctx = cv.getContext('2d');
       if (!ctx) { rafRef.current = 0; return; }
-      const now = performance.now();
-      fxRef.current = fxRef.current.filter(e => now - e.start < FX_DUR);
-      drawCombat(ctx, cur, vgaRef.current);
-      drawFx(ctx, cur, fxRef.current.map(e => ({ ...e, age: (now - e.start) / FX_DUR })));
-      if (fxRef.current.length > 0) { rafRef.current = requestAnimationFrame(step); }
-      else { rafRef.current = 0; }
+      if (ts - lastDrawRef.current >= 33) {
+        lastDrawRef.current = ts;
+        const now = performance.now();
+        fxRef.current = fxRef.current.filter(e => now - e.start < FX_DUR);
+        if (cur.screen === 'combat') {
+          const active = fxRef.current.map(e => ({ ...e, age: (now - e.start) / FX_DUR }));
+          drawCombat(ctx, cur, vgaRef.current, active);
+          drawFx(ctx, cur, active);
+        } else {
+          drawDungeon(ctx, cur, vgaRef.current);
+        }
+      }
+      rafRef.current = requestAnimationFrame(step);
     };
     rafRef.current = requestAnimationFrame(step);
   }, []);
@@ -122,7 +132,8 @@ export const App: React.FC = () => {
     else if (g.screen === 'dungeon') drawDungeon(ctx, g, vga);
     else if (g.screen === 'overworld') drawOverworld(ctx, g, vga);
     else drawTitle(ctx);
-  }, [g, vga]);
+    if (g.screen === 'combat' || g.screen === 'dungeon') runAmbient();
+  }, [g, vga, runAmbient]);
 
   // flush queued combat FX -> animate
   useEffect(() => {
@@ -130,8 +141,8 @@ export const App: React.FC = () => {
     const now = performance.now();
     for (const f of g.fx) fxRef.current.push({ ...f, start: now });
     apply(d => { d.fx = []; });
-    runFxLoop();
-  }, [g.fx, apply, runFxLoop]);
+    runAmbient();
+  }, [g.fx, apply, runAmbient]);
 
   useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
 

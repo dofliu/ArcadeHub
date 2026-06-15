@@ -1,7 +1,7 @@
 // ===== All canvas rendering =====
 import { GameState } from './types';
 import { mapMap, monsterMap } from './data/content';
-import { MONSTER_SPRITES, drawSprite, drawSilhouette, charSpriteRows, EGA } from './sprites';
+import { MONSTER_SPRITES, DETAILED_SPRITES, drawSprite, drawSilhouette, charSpriteRows, EGA } from './sprites';
 
 export const CW = 560;
 export const CH = 360;
@@ -75,13 +75,27 @@ function isDoor(grid: string[], doors: Record<string, any> | undefined, x: numbe
 
 // ---- original procedural VGA stone/brick helpers (no copied assets) ----
 function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
-// Warm stone colour at brightness level 0..1 (tan/brown like a torchlit dungeon).
-function stoneC(level: number, tint = 1) {
+
+// Per-dungeon stone tint so each location reads differently.
+let THEME = { r: 1, g: 1, b: 1 };
+const THEMES: Record<string, { r: number; g: number; b: number }> = {
+  warm: { r: 1, g: 1, b: 1 },                 // Middlegate dungeon — tan/brown
+  cold: { r: 0.66, g: 0.92, b: 1.7 },          // Sunken caverns — blue/teal
+  sky: { r: 0.82, g: 0.96, b: 1.5 },           // Sky temple — pale cold blue
+};
+function themeFor(mapId: string): { r: number; g: number; b: number } {
+  if (mapId.startsWith('caverns')) return THEMES.cold;
+  if (mapId.startsWith('sky')) return THEMES.sky;
+  return THEMES.warm;
+}
+
+// Warm stone colour at brightness level 0..1, tinted by the current theme.
+function stoneC(level: number) {
   const L = Math.max(0, Math.min(1, level));
-  const r = Math.round(34 + L * 168) * tint;
-  const g = Math.round(28 + L * 132) * tint;
-  const b = Math.round(20 + L * 92) * tint;
-  return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+  const r = (34 + L * 168) * THEME.r;
+  const g = (28 + L * 132) * THEME.g;
+  const b = (20 + L * 92) * THEME.b;
+  return `rgb(${Math.min(255, Math.round(r))},${Math.min(255, Math.round(g))},${Math.min(255, Math.round(b))})`;
 }
 
 // Beveled brick panel facing the viewer (the showpiece wall).
@@ -150,23 +164,27 @@ function vignette(ctx: CanvasRenderingContext2D, strength = 0.5) {
   ctx.fillRect(0, 0, CW, CH);
 }
 
-// A wall torch with a warm additive glow.
+// A wall torch with a warm additive glow that flickers over time.
 function torch(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
+  const t = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const flick = 0.82 + 0.13 * Math.sin(t / 95 + x * 0.05) + 0.07 * Math.sin(t / 31 + y);
+  const R = 60 * s * flick;
   // glow
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  const gr = ctx.createRadialGradient(x, y, 2, x, y, 60 * s);
-  gr.addColorStop(0, 'rgba(255,180,70,0.55)');
-  gr.addColorStop(0.5, 'rgba(255,120,30,0.18)');
+  const gr = ctx.createRadialGradient(x, y, 2, x, y, R);
+  gr.addColorStop(0, `rgba(255,180,70,${0.5 * flick})`);
+  gr.addColorStop(0.5, 'rgba(255,120,30,0.16)');
   gr.addColorStop(1, 'rgba(255,90,20,0)');
   ctx.fillStyle = gr;
-  ctx.beginPath(); ctx.arc(x, y, 60 * s, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
   // bracket + flame
+  const fh = 8 * s * flick;
   ctx.fillStyle = '#3a2a18'; ctx.fillRect(x - 2 * s, y, 4 * s, 16 * s);
-  ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.ellipse(x, y - 4 * s, 4 * s, 8 * s, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#ff7b1a'; ctx.beginPath(); ctx.ellipse(x, y - 2 * s, 2.5 * s, 5 * s, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#fff3c4'; ctx.beginPath(); ctx.ellipse(x, y - 4 * s, 1.4 * s, 3 * s, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffd166'; ctx.beginPath(); ctx.ellipse(x, y - 4 * s, 4 * s, fh, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ff7b1a'; ctx.beginPath(); ctx.ellipse(x, y - 2 * s, 2.5 * s, fh * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff3c4'; ctx.beginPath(); ctx.ellipse(x, y - 4 * s, 1.4 * s, fh * 0.38, 0, 0, Math.PI * 2); ctx.fill();
 }
 
 // Draw a monster sprite with a 1px dark outline for a cleaner, designed look.
@@ -182,6 +200,7 @@ function outlinedSprite(ctx: CanvasRenderingContext2D, rows: string[], cx: numbe
 export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState, vga = true) {
   const map = mapMap[g.pos.mapId];
   const grid = map.grid;
+  THEME = themeFor(map.id);
   const lit = !!g.flags['light'];
   const amb = lit ? 0.95 : 0.6; // ambient brightness
 
@@ -342,7 +361,8 @@ export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState, vga =
   viewFrame(ctx);
 }
 
-export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = true) {
+export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = true, fx: ActiveFx[] = []) {
+  THEME = themeFor(g.pos.mapId);
   // textured stone chamber: brick back wall + side walls + tiled floor
   const floorY = CH * 0.62;
   brickPanel(ctx, 0, 0, CW, floorY, 0.6);                 // back wall
@@ -374,10 +394,15 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = tr
     const my = CH * 0.32 + row * 70;
     const dead = m.hp <= 0;
     ctx.globalAlpha = dead ? 0.2 : 1;
-    const sprite = MONSTER_SPRITES[m.defId];
+    const sprite = DETAILED_SPRITES[m.defId] || MONSTER_SPRITES[m.defId];
     const size = def.boss ? 60 : 26;
+    // reaction to an active hit/spell effect on this monster
+    const hitFx = fx.find(e => e.side === 'monster' && e.idx === i && (e.kind === 'hit' || e.kind === 'crit' || e.kind === 'spell'));
+    const react = hitFx ? Math.max(0, 1 - hitFx.age) : 0;
+    const jitter = react > 0 ? Math.round(Math.sin(hitFx!.age * 30) * 3 * react) : 0;
     if (sprite) {
-      const px = def.boss ? 11 : 7;
+      const px = Math.max(3, Math.round((def.boss ? 150 : 96) / sprite[0].length));
+      const mxj = mx + jitter;
       const baseY = my + (def.boss ? 70 : 46);
       // ground shadow
       ctx.save();
@@ -388,7 +413,13 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = tr
       ctx.fill();
       ctx.restore();
       ctx.globalAlpha = dead ? 0.2 : 1;
-      outlinedSprite(ctx, sprite, mx, baseY, px);
+      outlinedSprite(ctx, sprite, mxj, baseY, px);
+      if (react > 0.05) {
+        ctx.save();
+        ctx.globalAlpha = react * 0.8;
+        drawSilhouette(ctx, sprite, mxj, baseY, px, hitFx!.kind === 'crit' ? '#fff7c0' : '#ffffff');
+        ctx.restore();
+      }
     } else {
       // fallback blob for any monster without a sprite yet
       ctx.fillStyle = def.color;

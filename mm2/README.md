@@ -6,9 +6,9 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 9 — visual polish.** Wall torches with warm glow, edge vignettes, outlined
-> monster sprites, and overworld shadows with the leader's figure as the party marker. Content
-> stays fully data-driven.
+> Status: **Milestone 10 — animation & theming.** Flickering torch flames, combat hit reactions
+> (flash + knock), per-dungeon stone palettes, and higher-resolution sprites for the common foes.
+> Content stays fully data-driven.
 
 ### Faithful-to-MM2 touches
 
@@ -63,6 +63,17 @@ A complete playthrough loop exercising every major system:
   Restore, Smite, Greater Protection, Sunray.
 - **Two new quests** across Atlantium (Crown of the Deep, the Ancient Scroll) that grant gear
   and teach a spell.
+
+### Milestone 10 — animation & theming
+
+- **Flickering torches** — flames and glow pulse over time via an ambient redraw loop that runs in
+  the dungeon and in combat.
+- **Combat hit reactions** — struck monsters flash white (gold on a crit) and jolt; spells flash in
+  their element colour.
+- **Per-dungeon stone palettes** — Middlegate is warm tan, the Sunken Caverns shift cold teal, the
+  Sky Temple a pale cold blue; the combat chamber matches the dungeon you're fighting in.
+- **Higher-resolution foes** — new 16-wide original sprites for goblin, skeleton and orc (with a
+  fallback to the 12px set), sized by width for a consistent on-screen scale.
 
 ### Milestone 9 — visual polish
 
