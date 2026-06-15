@@ -6,7 +6,7 @@ import { drawDungeon, drawOverworld, drawCombat, drawTitle, drawFx, CW, CH } fro
 import { soundService, Sfx } from '../sound';
 import { Btn, Panel, PartyPanel } from './common';
 import {
-  CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen, HireScreen, TrainScreen,
+  CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen, HireScreen, TrainScreen, SavesScreen,
 } from './screens';
 import {
   ArrowUp, ArrowDown, RotateCcw, RotateCw, ArrowLeft, ArrowRight, Save, FolderOpen,
@@ -20,11 +20,15 @@ const DIRV = [
 export const App: React.FC = () => {
   const [g, setG] = useState<GameState>(() => E.newGame());
   const [sheetActive, setSheetActive] = useState(0);
-  const [soundOn, setSoundOn] = useState(true);
-  const [vga, setVga] = useState(true);
+  const [soundOn, setSoundOn] = useState(() => E.loadSettings()?.sound ?? true);
+  const [vga, setVga] = useState(() => E.loadSettings()?.vga ?? true);
   const vgaRef = useRef(vga);
   vgaRef.current = vga;
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // remember display/sound preferences
+  useEffect(() => { soundService.setEnabled(soundOn); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { E.saveSettings({ vga, sound: soundOn }); }, [vga, soundOn]);
 
   const apply = useCallback((fn: (d: GameState) => void) => {
     setG(prev => { const d = E.clone(prev); fn(d); return d; });
@@ -169,11 +173,8 @@ export const App: React.FC = () => {
             <>
               <Btn onClick={() => apply(d => { d.screen = 'quests'; })} title="任務日誌"><ScrollText size={16} /></Btn>
               <Btn onClick={() => { setSheetActive(0); apply(d => { d.screen = 'sheet'; }); }} title="角色與背包"><Backpack size={16} /></Btn>
-              <Btn onClick={() => apply(d => E.saveGame(d))} title="存檔"><Save size={16} /></Btn>
+              <Btn onClick={() => apply(d => { d.screen = 'saves'; })} title="存讀檔"><Save size={16} /></Btn>
             </>
-          )}
-          {E.hasSave() && (
-            <Btn onClick={() => { const s = E.loadGame(); if (s) setG(s); }} title="讀檔"><FolderOpen size={16} /></Btn>
           )}
         </div>
       </header>
@@ -237,7 +238,7 @@ export const App: React.FC = () => {
             </p>
             <div className="flex gap-3">
               <Btn variant="primary" className="px-8 py-2" onClick={() => apply(d => { d.screen = 'create'; })}>新的冒險</Btn>
-              {E.hasSave() && <Btn variant="gold" className="px-6 py-2" onClick={() => { const s = E.loadGame(); if (s) setG(s); }}>繼續遊戲</Btn>}
+              {E.hasAnySave() && <Btn variant="gold" className="px-6 py-2" onClick={() => { const sl = E.latestSlot(); const s = sl ? E.loadGame(sl) : null; if (s) setG(s); }}>繼續遊戲</Btn>}
             </div>
           </div>
         )}
@@ -250,6 +251,7 @@ export const App: React.FC = () => {
         {g.screen === 'quests' && <QuestLogScreen g={g} apply={apply} />}
         {g.screen === 'hire' && <HireScreen g={g} apply={apply} />}
         {g.screen === 'train' && <TrainScreen g={g} apply={apply} active={sheetActive} setActive={setSheetActive} />}
+        {g.screen === 'saves' && <SavesScreen g={g} apply={apply} replace={setG} />}
         {g.screen === 'combat' && <CombatPanel g={g} apply={apply} />}
 
         {/* Explore movement controls (touch screens; desktop uses arrow keys) */}
