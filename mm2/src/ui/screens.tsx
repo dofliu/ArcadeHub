@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Character, EquipSlot, GameState } from '../types';
 import * as E from '../engine';
 import {
@@ -407,12 +407,52 @@ export const CombatPanel: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply
   const reset = () => setMode({ t: 'menu' });
   const wrap = (fn: (d: GameState) => void) => { apply(fn); reset(); };
 
+  const aliveMonsters = (g.combat?.monsters || []).map((m, i) => ({ m, i })).filter(x => x.m.hp > 0);
+  const consumables = g.backpack.filter(id => itemMap[id].type === 'consumable');
+
+  // keyboard shortcuts: A attack, D defend, S spell, I item, R run; digits pick a target
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!actor) return;
+      if (e.key === 'Escape') { setMode({ t: 'menu' }); return; }
+      const k = e.key.toLowerCase();
+      const n = /^[1-9]$/.test(e.key) ? parseInt(e.key, 10) : 0;
+      const castSpell = (sid: string) => {
+        const sp = spellMap[sid];
+        if (!sp || actor.sp < sp.cost) return;
+        if (sp.target === 'allEnemies' || sp.target === 'party' || sp.target === 'self') wrap(d => E.combatCast(d, sid, -1));
+        else if (sp.target === 'enemy') setMode({ t: 'spellTargetEnemy', spellId: sid });
+        else setMode({ t: 'spellTargetAlly', spellId: sid });
+      };
+      if (mode.t === 'menu') {
+        if (k === 'a') { e.preventDefault(); if (aliveMonsters.length === 1) wrap(d => E.combatAttack(d, aliveMonsters[0].i)); else setMode({ t: 'attack' }); }
+        else if (k === 'd') { e.preventDefault(); wrap(d => E.combatBlock(d)); }
+        else if (k === 's' && actor.spells.length > 0) { e.preventDefault(); setMode({ t: 'spellList' }); }
+        else if (k === 'i' && consumables.length > 0) { e.preventDefault(); setMode({ t: 'itemList' }); }
+        else if (k === 'r') { e.preventDefault(); apply(d => E.combatRun(d)); }
+        else if (n && n <= aliveMonsters.length) { e.preventDefault(); wrap(d => E.combatAttack(d, aliveMonsters[n - 1].i)); }
+      } else if (mode.t === 'attack') {
+        if (n && n <= aliveMonsters.length) { e.preventDefault(); wrap(d => E.combatAttack(d, aliveMonsters[n - 1].i)); }
+      } else if (mode.t === 'spellList') {
+        if (n && n <= actor.spells.length) { e.preventDefault(); castSpell(actor.spells[n - 1]); }
+      } else if (mode.t === 'spellTargetEnemy') {
+        if (n && n <= aliveMonsters.length) { e.preventDefault(); wrap(d => E.combatCast(d, mode.spellId, aliveMonsters[n - 1].i)); }
+      } else if (mode.t === 'spellTargetAlly') {
+        if (n && n <= g.party.length) { e.preventDefault(); wrap(d => E.combatCast(d, mode.spellId, n - 1)); }
+      } else if (mode.t === 'itemList') {
+        if (n && n <= consumables.length) { e.preventDefault(); setMode({ t: 'itemTarget', itemId: consumables[n - 1] }); }
+      } else if (mode.t === 'itemTarget') {
+        if (n && n <= g.party.length) { e.preventDefault(); wrap(d => E.combatItem(d, mode.itemId, n - 1)); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, g]);
+
   if (!actor) {
     return <Panel className="w-full text-center text-mm-light/60 text-sm">戰鬥進行中…</Panel>;
   }
-
-  const aliveMonsters = g.combat!.monsters.map((m, i) => ({ m, i })).filter(x => x.m.hp > 0);
-  const consumables = g.backpack.filter(id => itemMap[id].type === 'consumable');
 
   return (
     <Panel className="w-full">
@@ -427,26 +467,31 @@ export const CombatPanel: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply
           <Btn onClick={() => apply(d => E.combatRun(d))}><Footprints size={14} className="inline mr-1" />逃跑</Btn>
         </div>
       )}
+      {mode.t === 'menu' && (
+        <div className="hidden md:block text-[11px] text-mm-light/40 mt-2">
+          快捷鍵：<b>A</b>攻擊 <b>D</b>防禦{actor.spells.length > 0 ? <> <b>S</b>法術</> : ''}{consumables.length > 0 ? <> <b>I</b>道具</> : ''} <b>R</b>逃跑 · 數字鍵選目標
+        </div>
+      )}
 
       {mode.t === 'attack' && (
         <div>
-          <div className="text-xs text-mm-light/50 mb-1">選擇攻擊目標：</div>
+          <div className="text-xs text-mm-light/50 mb-1">選擇攻擊目標（數字鍵）：</div>
           <div className="flex flex-wrap gap-2">
-            {aliveMonsters.map(({ m, i }) => (
+            {aliveMonsters.map(({ m, i }, k) => (
               <Btn key={m.uid} variant="danger" onClick={() => wrap(d => E.combatAttack(d, i))}>
-                {monsterMap[m.defId].name}（{m.hp}）
+                {k + 1}. {monsterMap[m.defId].name}（{m.hp}）
               </Btn>
             ))}
-            <Btn onClick={reset}>取消</Btn>
+            <Btn onClick={reset}>取消(Esc)</Btn>
           </div>
         </div>
       )}
 
       {mode.t === 'spellList' && (
         <div>
-          <div className="text-xs text-mm-light/50 mb-1">選擇法術（SP {actor.sp}/{actor.maxSp}）：</div>
+          <div className="text-xs text-mm-light/50 mb-1">選擇法術 數字鍵（SP {actor.sp}/{actor.maxSp}）：</div>
           <div className="flex flex-wrap gap-2">
-            {actor.spells.map(sid => {
+            {actor.spells.map((sid, k) => {
               const sp = spellMap[sid];
               return (
                 <Btn key={sid} variant="primary" disabled={actor.sp < sp.cost}
@@ -455,23 +500,23 @@ export const CombatPanel: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply
                     else if (sp.target === 'enemy') setMode({ t: 'spellTargetEnemy', spellId: sid });
                     else setMode({ t: 'spellTargetAlly', spellId: sid });
                   }}>
-                  {sp.name}（{sp.cost}）
+                  {k + 1}. {sp.name}（{sp.cost}）
                 </Btn>
               );
             })}
-            <Btn onClick={reset}>取消</Btn>
+            <Btn onClick={reset}>取消(Esc)</Btn>
           </div>
         </div>
       )}
 
       {mode.t === 'spellTargetEnemy' && (
         <div className="flex flex-wrap gap-2">
-          {aliveMonsters.map(({ m, i }) => (
+          {aliveMonsters.map(({ m, i }, k) => (
             <Btn key={m.uid} variant="danger" onClick={() => wrap(d => E.combatCast(d, mode.spellId, i))}>
-              {monsterMap[m.defId].name}（{m.hp}）
+              {k + 1}. {monsterMap[m.defId].name}（{m.hp}）
             </Btn>
           ))}
-          <Btn onClick={reset}>取消</Btn>
+          <Btn onClick={reset}>取消(Esc)</Btn>
         </div>
       )}
 
@@ -479,28 +524,28 @@ export const CombatPanel: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply
         <div className="flex flex-wrap gap-2">
           {g.party.map((c, i) => (
             <Btn key={i} onClick={() => wrap(d => E.combatCast(d, mode.spellId, i))}>
-              {c.name}（{c.hp}/{c.maxHp}）
+              {i + 1}. {c.name}（{c.hp}/{c.maxHp}）
             </Btn>
           ))}
-          <Btn onClick={reset}>取消</Btn>
+          <Btn onClick={reset}>取消(Esc)</Btn>
         </div>
       )}
 
       {mode.t === 'itemList' && (
         <div className="flex flex-wrap gap-2">
           {consumables.map((id, k) => (
-            <Btn key={id + k} variant="gold" onClick={() => setMode({ t: 'itemTarget', itemId: id })}>{itemMap[id].name}</Btn>
+            <Btn key={id + k} variant="gold" onClick={() => setMode({ t: 'itemTarget', itemId: id })}>{k + 1}. {itemMap[id].name}</Btn>
           ))}
-          <Btn onClick={reset}>取消</Btn>
+          <Btn onClick={reset}>取消(Esc)</Btn>
         </div>
       )}
 
       {mode.t === 'itemTarget' && (
         <div className="flex flex-wrap gap-2">
           {g.party.map((c, i) => (
-            <Btn key={i} onClick={() => wrap(d => E.combatItem(d, mode.itemId, i))}>{c.name}</Btn>
+            <Btn key={i} onClick={() => wrap(d => E.combatItem(d, mode.itemId, i))}>{i + 1}. {c.name}</Btn>
           ))}
-          <Btn onClick={reset}>取消</Btn>
+          <Btn onClick={reset}>取消(Esc)</Btn>
         </div>
       )}
     </Panel>
