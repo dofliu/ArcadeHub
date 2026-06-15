@@ -1,7 +1,7 @@
 // ===== All canvas rendering =====
 import { GameState } from './types';
 import { mapMap, monsterMap } from './data/content';
-import { MONSTER_SPRITES, drawSprite } from './sprites';
+import { MONSTER_SPRITES, drawSprite, EGA } from './sprites';
 
 export const CW = 560;
 export const CH = 360;
@@ -19,6 +19,43 @@ function opening(d: number) {
   const s = SCALES[d];
   return { l: CX - (CW / 2) * s, r: CX + (CW / 2) * s, t: CY - (CH / 2) * s, b: CY + (CH / 2) * s };
 }
+
+// ---- EGA post-process: pixelate + snap every pixel to the 16-colour EGA palette ----
+const EGA_RGB = EGA.map(h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)] as [number, number, number]);
+const egaCache = new Map<number, number>();
+function nearestEga(r: number, g: number, b: number): [number, number, number] {
+  const key = (r >> 2 << 12) | (g >> 2 << 6) | (b >> 2);
+  const hit = egaCache.get(key);
+  if (hit !== undefined) return EGA_RGB[hit];
+  let best = 0, bestD = Infinity;
+  for (let i = 0; i < EGA_RGB.length; i++) {
+    const [er, eg, eb] = EGA_RGB[i];
+    const d = (r - er) * (r - er) + (g - eg) * (g - eg) + (b - eb) * (b - eb);
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  egaCache.set(key, best);
+  return EGA_RGB[best];
+}
+
+// Pixelate into `block`-sized cells and quantise to EGA. Applied once per redraw.
+export function egaPost(ctx: CanvasRenderingContext2D, block = 2) {
+  const img = ctx.getImageData(0, 0, CW, CH);
+  const d = img.data;
+  for (let y = 0; y < CH; y += block) {
+    for (let x = 0; x < CW; x += block) {
+      const i = (y * CW + x) * 4;
+      const [nr, ng, nb] = nearestEga(d[i], d[i + 1], d[i + 2]);
+      for (let yy = 0; yy < block && y + yy < CH; yy++) {
+        for (let xx = 0; xx < block && x + xx < CW; xx++) {
+          const j = ((y + yy) * CW + (x + xx)) * 4;
+          d[j] = nr; d[j + 1] = ng; d[j + 2] = nb; d[j + 3] = 255;
+        }
+      }
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+}
+
 function quad(ctx: CanvasRenderingContext2D, p: number[], color: string) {
   ctx.fillStyle = color;
   ctx.beginPath();
@@ -88,6 +125,7 @@ export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState) {
     else if (map.encounters?.[fkey] && !g.clearedEncounters.includes(gkey)) marker(ctx, far, '#9b2226');
     cx = fx; cy = fy;
   }
+  egaPost(ctx);
 }
 
 function isDoorClosed(g: GameState, x: number, y: number): boolean {
@@ -115,10 +153,21 @@ export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState) {
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const ch = grid[y][x];
+      const tx = ox + x * tile, ty = oy + y * tile;
       ctx.fillStyle = colors[ch] || '#3f6b3f';
-      ctx.fillRect(ox + x * tile, oy + y * tile, tile - 1, tile - 1);
-      if (ch === 'T') { ctx.fillStyle = '#1b3a18'; ctx.beginPath(); ctx.arc(ox + x * tile + tile / 2, oy + y * tile + tile / 2, tile * 0.3, 0, Math.PI * 2); ctx.fill(); }
-      if (ch === '^') { ctx.fillStyle = '#7a7a8c'; ctx.beginPath(); ctx.moveTo(ox + x * tile + tile / 2, oy + y * tile + tile * 0.2); ctx.lineTo(ox + x * tile + tile * 0.85, oy + y * tile + tile * 0.85); ctx.lineTo(ox + x * tile + tile * 0.15, oy + y * tile + tile * 0.85); ctx.fill(); }
+      ctx.fillRect(tx, ty, tile - 1, tile - 1);
+      // EGA-style tile detailing (deterministic per cell)
+      if (ch === '.' || ch === 'S') {
+        ctx.fillStyle = '#2f5530';
+        if ((x + y) % 2 === 0) ctx.fillRect(tx + tile * 0.25, ty + tile * 0.55, 2, 2);
+        if ((x * 3 + y) % 3 === 0) ctx.fillRect(tx + tile * 0.65, ty + tile * 0.3, 2, 2);
+      } else if (ch === '~') {
+        ctx.fillStyle = '#3a6ea5';
+        ctx.fillRect(tx + tile * 0.15, ty + tile * 0.35, tile * 0.4, 2);
+        ctx.fillRect(tx + tile * 0.45, ty + tile * 0.65, tile * 0.4, 2);
+      }
+      if (ch === 'T') { ctx.fillStyle = '#1b3a18'; ctx.beginPath(); ctx.arc(tx + tile / 2, ty + tile / 2, tile * 0.3, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#234d20'; ctx.fillRect(tx + tile * 0.45, ty + tile * 0.6, tile * 0.1, tile * 0.3); }
+      if (ch === '^') { ctx.fillStyle = '#7a7a8c'; ctx.beginPath(); ctx.moveTo(tx + tile / 2, ty + tile * 0.2); ctx.lineTo(tx + tile * 0.85, ty + tile * 0.85); ctx.lineTo(tx + tile * 0.15, ty + tile * 0.85); ctx.fill(); ctx.fillStyle = '#cfd2dc'; ctx.beginPath(); ctx.moveTo(tx + tile / 2, ty + tile * 0.2); ctx.lineTo(tx + tile * 0.62, ty + tile * 0.45); ctx.lineTo(tx + tile * 0.38, ty + tile * 0.45); ctx.fill(); }
     }
   }
   // portals
@@ -149,6 +198,7 @@ export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState) {
   ctx.lineTo(cxp - d.x * tile * 0.3 - d.y * tile * 0.25, cyp - d.y * tile * 0.3 - d.x * tile * 0.25);
   ctx.closePath(); ctx.fill();
   ctx.textAlign = 'start';
+  egaPost(ctx);
 }
 
 export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
@@ -209,6 +259,7 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
   ctx.fillStyle = '#4cc9f0';
   ctx.font = '13px monospace';
   ctx.fillText(`ROUND ${c.round}`, 12, 22);
+  egaPost(ctx);
 }
 
 export function drawTitle(ctx: CanvasRenderingContext2D) {
@@ -228,4 +279,5 @@ export function drawTitle(ctx: CanvasRenderingContext2D) {
   ctx.font = '13px monospace';
   ctx.fillText('A standalone tribute', CX, CY + 36);
   ctx.textAlign = 'start';
+  egaPost(ctx, 2);
 }

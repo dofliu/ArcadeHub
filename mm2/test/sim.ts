@@ -269,5 +269,36 @@ if (e2.flags['game_won']) {
   assert(e2.screen === 'victory', 'winning the final battle shows the victory screen');
 }
 
+// 16) Milestone 4 — Sky Temple dungeon, djinn boss, sky quest
+console.log('Milestone 4 — Sky Temple:');
+const sk = E.newGame();
+const skp = [0, 1, 2, 3].map(i => E.makeCharacter(i, 'S' + i, 'human', i === 2 ? 'sorcerer' : 'knight'));
+for (const c of skp) { c.level = 30; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp; c.equipment.weapon = 'storm_blade'; }
+E.startAdventure(sk, skp);
+// overworld portal to the sky temple
+sk.screen = 'overworld'; sk.pos = { mapId: 'overworld', x: 9, y: 11, dir: 1 }; E.enterCell(sk);
+assert(sk.pos.mapId === 'sky_temple1' && sk.screen === 'dungeon', 'Sky Temple portal enters the dungeon');
+const djinnEnc = mapMap['sky_temple1'].encounters!['10,7'];
+E.startCombat(sk, 'sky_temple1:10,7', djinnEnc, 'sky_temple1');
+let sg = 0;
+while (sk.combat && sg++ < 2000) {
+  const a = E.currentActor(sk);
+  if (!a) break;
+  if (a.side === 'party') { const mi = E.firstAliveMonsterIdx(sk); if (mi < 0) break; E.combatAttack(sk, mi); }
+  else break;
+}
+assert(sk.combat === null, 'storm djinn fight terminates');
+if (sk.flags['djinn_dead']) assert(sk.backpack.includes('sky_shard'), 'storm djinn drops the Sky Shard');
+// sky quest teaches lightning
+const skm = E.newGame();
+const astro = [E.makeCharacter(0, 'M', 'elf', 'sorcerer')];
+astro[0].level = 12; E.recompute(astro[0]);
+E.startAdventure(skm, astro);
+E.applyDialogAction(skm, { giveQuest: 'sky_quest' });
+skm.backpack.push('sky_shard');
+assert(E.npcEntryNode(skm, 'astronomer') === 'reward', 'astronomer ready with the shard');
+E.applyDialogAction(skm, { completeQuest: 'sky_quest', teachSpell: 'lightning' });
+assert(astro[0].spells.includes('lightning'), 'sky quest teaches Lightning Bolt');
+
 console.log('\n' + (failures === 0 ? '✅ ALL SIM CHECKS PASSED' : `❌ ${failures} CHECK(S) FAILED`));
 if (failures > 0) process.exit(1);

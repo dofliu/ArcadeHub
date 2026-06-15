@@ -141,7 +141,7 @@ export const App: React.FC = () => {
       <main className="w-full max-w-4xl flex flex-col items-center gap-3">
         {showCanvas && (
           <div className="relative">
-            <canvas ref={canvasRef} width={CW} height={CH} className="rounded-lg border-2 border-mm-edge shadow-2xl bg-black max-w-full" />
+            <canvas ref={canvasRef} width={CW} height={CH} style={{ imageRendering: 'pixelated' }} className="rounded-lg border-2 border-mm-edge shadow-2xl bg-black max-w-full" />
             {g.screen === 'dungeon' && (
               <div className="absolute top-2 right-2 bg-black/60 p-1 rounded border border-mm-edge">
                 {g.flags['wizard_eye'] ? (

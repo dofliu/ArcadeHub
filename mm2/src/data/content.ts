@@ -123,6 +123,10 @@ export const ITEMS: ItemDef[] = [
   { id: 'sea_crown', name: '海皇冠冕', nameEn: 'Crown of the Deep', type: 'quest', value: 0, desc: '沉沒洞窟魔王守護的古老冠冕。' },
   { id: 'ancient_scroll', name: '遠古卷軸', nameEn: 'Ancient Scroll', type: 'quest', value: 0, desc: '智者賽吉想研究的神祕卷軸。' },
   { id: 'rune_key', name: '符文鑰匙', nameEn: 'Rune Key', type: 'quest', value: 0, desc: '開啟沉沒洞窟深處封印的符文之鑰。' },
+  // ---- Milestone 4 ----
+  { id: 'storm_blade', name: '雷霆之刃', nameEn: 'Storm Blade', type: 'weapon', slot: 'weapon', dmg: [5, 12], atkBonus: 3, value: 520, desc: '附帶雷電的鋒利長劍。' },
+  { id: 'mithril_plate', name: '秘銀板甲', nameEn: 'Mithril Plate', type: 'armor', slot: 'armor', acBonus: 12, value: 720, desc: '輕盈而堅固的秘銀全身甲。' },
+  { id: 'sky_shard', name: '天空碎片', nameEn: 'Sky Shard', type: 'quest', value: 0, desc: '天空神殿核心的結晶碎片，天文學家亟欲研究。' },
 ];
 
 export const MONSTERS: MonsterDef[] = [
@@ -149,6 +153,11 @@ export const MONSTERS: MonsterDef[] = [
   { id: 'fire_drake', name: '火焰飛龍', nameEn: 'Fire Drake', hp: 64, ac: 8, attack: 8, dmg: [6, 14], speed: 13, xp: 240, gold: [50, 100], spellId: 'flame_arrow', resist: { fire: 70 }, color: '#e85d04', desc: '噴吐火焰的年輕龍獸。' },
   { id: 'sea_serpent', name: '深海巨蛇', nameEn: 'Sea Serpent', hp: 220, ac: 10, attack: 10, dmg: [8, 18], speed: 14, xp: 900, gold: [350, 550], spellId: 'ice_storm', resist: { cold: 70, fire: 20 }, inflicts: { poison: 0.3 }, boss: true, color: '#0077b6', desc: '盤踞沉沒洞窟、守護海皇冠冕的遠古巨蛇。' },
   { id: 'sheltem', name: '夏特姆', nameEn: 'Sheltem', hp: 320, ac: 12, attack: 12, dmg: [10, 22], speed: 16, xp: 2000, gold: [800, 1200], spellId: 'meteor', resist: { fire: 50, cold: 50, shock: 50, holy: 30 }, inflicts: { paralyze: 0.3 }, boss: true, color: '#d00000', desc: '叛逆的守護者，妄圖毀滅克朗的元兇。' },
+  // ---- Milestone 4 monsters (Sky Temple) ----
+  { id: 'giant_bat', name: '巨蝙蝠', nameEn: 'Giant Bat', hp: 16, ac: 6, attack: 5, dmg: [2, 6], speed: 18, xp: 50, gold: [2, 6], color: '#6d597a', desc: '盤旋於高塔的迅捷蝙蝠。' },
+  { id: 'stone_golem', name: '石巨人', nameEn: 'Stone Golem', hp: 80, ac: 11, attack: 7, dmg: [6, 14], speed: 5, xp: 230, gold: [20, 50], resist: { fire: 30, cold: 30, shock: 30, poison: 100 }, color: '#8a8d91', desc: '緩慢但堅不可摧的魔像守衛。' },
+  { id: 'storm_elemental', name: '風暴元素', nameEn: 'Storm Elemental', hp: 44, ac: 7, attack: 6, dmg: [4, 10], speed: 15, xp: 165, gold: [20, 45], spellId: 'lightning', resist: { shock: 80 }, color: '#48cae4', desc: '凝聚雷電的元素生命。' },
+  { id: 'storm_djinn', name: '雷霆精靈王', nameEn: 'Storm Djinn', hp: 260, ac: 11, attack: 11, dmg: [8, 18], speed: 17, xp: 1200, gold: [400, 700], spellId: 'lightning', resist: { shock: 80, fire: 20 }, inflicts: { paralyze: 0.25 }, boss: true, color: '#0096c7', desc: '盤踞天空神殿、操縱雷霆的精靈之王。' },
 ];
 
 // ---------- Maps ----------
@@ -181,6 +190,7 @@ export const MAPS: TileMap[] = [
       '16,11': { toMap: 'overworld', to: { x: 16, y: 11 }, toScreen: 'town', town: 'vulcania', label: '火山城 Vulcania' },
       '16,7': { toMap: 'dungeon1', to: { x: 1, y: 1, dir: 1 }, label: '中央之門地城' },
       '2,2': { toMap: 'caverns1', to: { x: 1, y: 1, dir: 1 }, label: '沉沒洞窟' },
+      '9,11': { toMap: 'sky_temple1', to: { x: 1, y: 1, dir: 1 }, label: '天空神殿' },
     },
     encounters: {
       '6,10': { monsters: [{ id: 'goblin', count: [1, 2] }, { id: 'kobold', count: [1, 2] }] },
@@ -325,6 +335,37 @@ export const MAPS: TileMap[] = [
     },
     portals: {
       '1,1': { toMap: 'caverns1', to: { x: 10, y: 1, dir: 3 }, label: '向上的階梯' },
+    },
+  },
+  {
+    id: 'sky_temple1',
+    name: '天空神殿',
+    nameEn: 'Sky Temple',
+    kind: 'dungeon',
+    level: 1,
+    grid: [
+      '############',
+      '#..........#',
+      '#..####....#',
+      '#..........#',
+      '#....##....#',
+      '#....##....#',
+      '#..........#',
+      '#..........#',
+      '############',
+    ],
+    start: { x: 1, y: 1, dir: 1 },
+    chests: {
+      '1,6': { gold: [100, 180], items: ['mithril_plate'] },
+      '10,1': { gold: [80, 150], items: ['storm_blade'] },
+    },
+    encounters: {
+      '5,3': { monsters: [{ id: 'giant_bat', count: [2, 3] }, { id: 'storm_elemental', count: [1, 1] }] },
+      '8,5': { monsters: [{ id: 'stone_golem', count: [1, 1] }, { id: 'giant_bat', count: [1, 2] }] },
+      '10,7': { monsters: [{ id: 'storm_djinn', count: [1, 1] }], once: true, boss: true, bossItem: 'sky_shard', bossFlag: 'djinn_dead' },
+    },
+    portals: {
+      '1,1': { toMap: 'overworld', to: { x: 9, y: 10, dir: 0 }, label: '回到地表' },
     },
   },
 ];
@@ -659,6 +700,35 @@ export const NPCS: NPCDef[] = [
       done: { id: 'done', text: '「沼澤安全了，村民都很感激你。」', options: [{ label: '離開', action: { end: true } }] },
     },
   },
+  {
+    id: 'astronomer',
+    name: '天文學家 賽蕾絲',
+    nameEn: 'Celeste the Astronomer',
+    root: 'start',
+    entries: [
+      { cond: { questComplete: 'sky_quest' }, node: 'done' },
+      { cond: { questActive: 'sky_quest', item: 'sky_shard' }, node: 'reward' },
+      { cond: { questActive: 'sky_quest' }, node: 'reminder' },
+    ],
+    nodes: {
+      start: {
+        id: 'start',
+        text: '「南方漂浮著一座天空神殿，核心有塊『天空碎片』。若你能取回，我就教你的法師駕馭雷霆之力——閃電束。」',
+        options: [
+          { label: '我去取回碎片', to: 'accept', action: { giveQuest: 'sky_quest' } },
+          { label: '改天再說', action: { end: true } },
+        ],
+      },
+      accept: { id: 'accept', text: '「天空神殿的入口在地圖南方。守護它的是雷霆精靈王，務必小心。」', options: [{ label: '了解', action: { end: true } }] },
+      reminder: { id: 'reminder', text: '「天空碎片還在神殿核心呢，由雷霆精靈王看守。」', options: [{ label: '快了', action: { end: true } }] },
+      reward: {
+        id: 'reward',
+        text: '「璀璨的天空碎片！如約定，閃電束之術現在屬於你的法師了。」',
+        options: [{ label: '領取傳授', action: { completeQuest: 'sky_quest', teachSpell: 'lightning', end: true } }],
+      },
+      done: { id: 'done', text: '「藉著天空碎片，我看見了更遙遠的星辰。謝謝你，旅人。」', options: [{ label: '離開', action: { end: true } }] },
+    },
+  },
 ];
 
 export const QUESTS: QuestDef[] = [
@@ -670,6 +740,7 @@ export const QUESTS: QuestDef[] = [
   { id: 'lost_tome', name: '失落的法典', nameEn: 'The Lost Tome', giver: 'mage_apprentice', itemRequired: 'arcane_tome', desc: '為法師學徒費歐尋回遺落的奧術法典。', hint: '奧術法典在地城深層的寶箱中。', rewardGold: 200, rewardXp: 160 },
   { id: 'caverns_quest', name: '海皇冠冕', nameEn: 'Crown of the Deep', giver: 'atlantium_tavern', itemRequired: 'sea_crown', desc: '從沉沒洞窟的深海巨蛇手中取回海皇冠冕。', hint: '需要符文鑰匙（洞窟一層）才能進入深淵，擊敗深海巨蛇。', rewardGold: 900, rewardXp: 700 },
   { id: 'sage_quest', name: '遠古卷軸', nameEn: 'The Ancient Scroll', giver: 'sage', itemRequired: 'ancient_scroll', desc: '為智者賽吉尋回沉沒洞窟中的遠古卷軸。', hint: '遠古卷軸在沉沒洞窟一層的寶箱中。', rewardGold: 300, rewardXp: 240 },
+  { id: 'sky_quest', name: '天空碎片', nameEn: 'The Sky Shard', giver: 'astronomer', itemRequired: 'sky_shard', desc: '從天空神殿的雷霆精靈王手中取回天空碎片。', hint: '天空神殿入口在戶外地圖南方。', rewardGold: 450, rewardXp: 380 },
 ];
 
 // ---------- Shops ----------
@@ -699,7 +770,7 @@ export const TOWNS: TownDef[] = [
     id: 'atlantium', name: '亞特蘭提姆 Atlantium', nameEn: 'Atlantium',
     desc: '繁華的學者之城，販售高階裝備與法術。',
     shops: ['master_smith', 'master_armory', 'arcane_emporium'],
-    npcs: ['atlantium_tavern', 'sage', 'townsfolk'],
+    npcs: ['atlantium_tavern', 'sage', 'astronomer', 'townsfolk'],
   },
   {
     id: 'tundara', name: '冰原城 Tundara', nameEn: 'Tundara',
