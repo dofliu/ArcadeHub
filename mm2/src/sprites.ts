@@ -415,3 +415,46 @@ export function drawSprite(
     }
   }
 }
+
+// ===== Original EGA standing figures for the party (paper-doll style). =====
+// A single humanoid template; symbolic cells (K skin, H head/helm, C garb,
+// D trim, W weapon, E eye) are recoloured per class — pure data.
+const CHAR_TEMPLATE: string[] = [
+  '.....HHHH...',
+  '....HHHHHH..',
+  '....HKKKKH..',
+  '....KEKKEK..',
+  '....KKKKKK..',
+  '.....CCC...W',
+  '...CCCCCCC.W',
+  '..CCCCCCCC.W',
+  '..DCCCCCCD.W',
+  '..D.CCCC.D.W',
+  '...CCCCCC...',
+  '...CC..CC...',
+  '...CC..CC...',
+  '..DD....DD..',
+  '............',
+];
+
+// Per-class palette: maps template symbols to EGA palette hex chars.
+const CLASS_PALETTE: Record<string, Record<string, string>> = {
+  //                 skin head garb trim weapon
+  knight:    { K: '6', H: '7', C: '7', D: '8', W: 'f', E: '0' },
+  paladin:   { K: '6', H: 'e', C: 'e', D: '6', W: '7', E: '0' },
+  archer:    { K: '6', H: '6', C: '2', D: '2', W: '6', E: '0' },
+  cleric:    { K: '6', H: 'e', C: 'f', D: '7', W: '6', E: '0' },
+  sorcerer:  { K: '6', H: '5', C: '5', D: '1', W: '9', E: '0' },
+  robber:    { K: '6', H: '8', C: '8', D: '0', W: '7', E: 'f' },
+  ninja:     { K: '6', H: '0', C: '8', D: '0', W: '7', E: 'f' },
+  barbarian: { K: '6', H: '6', C: '4', D: '6', W: '8', E: '0' },
+};
+
+export function charSpriteRows(classId: string): string[] {
+  const pal = CLASS_PALETTE[classId] || CLASS_PALETTE['knight'];
+  return CHAR_TEMPLATE.map(row =>
+    row.split('').map(ch => (ch === '.' ? '.' : pal[ch] || ch)).join('')
+  );
+}
+export const CHAR_W = CHAR_TEMPLATE[0].length;
+export const CHAR_H = CHAR_TEMPLATE.length;

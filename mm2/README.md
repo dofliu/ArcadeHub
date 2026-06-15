@@ -6,10 +6,9 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 4 — full EGA look + more content.** The whole screen is now rendered
-> through an EGA palette/pixelation pass, and a third dungeon (Sky Temple) with its boss and
-> quest has been added. Content stays fully data-driven, so the world keeps growing toward a
-> fuller MM2.
+> Status: **Milestone 5 — MM2-style interface.** The party now lives in a right-hand roster of
+> EGA standing figures (paper-doll style), closer to the original game's layout. Content stays
+> fully data-driven, so the world keeps growing toward a fuller MM2.
 
 ### Faithful-to-MM2 touches
 
@@ -64,6 +63,16 @@ A complete playthrough loop exercising every major system:
   Restore, Smite, Greater Protection, Sunray.
 - **Two new quests** across Atlantium (Crown of the Deep, the Ancient Scroll) that grant gear
   and teach a spell.
+
+### Milestone 5 — MM2-style party interface
+
+- **EGA standing figures** (`sprites.ts`) — an original humanoid template whose symbolic cells
+  (skin / head / garb / trim / weapon / eye) are recoloured per class, giving each of the eight
+  classes its own paper-doll figure.
+- **Right-hand party roster** (`PartyPanel`) — the party moved from a bottom strip to a vertical
+  right-side panel of portraits, each showing the figure, name/level/class, HP/SP and status,
+  closer to the original game's layout. On narrow screens it wraps below the view. Clicking a
+  portrait opens that character's sheet; the active combatant is highlighted.
 
 ### Milestone 4 — full EGA visuals & more content
 

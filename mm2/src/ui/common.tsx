@@ -1,7 +1,29 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Character, GameState } from '../types';
 import { classMap, raceMap } from '../data/content';
+import { charSpriteRows, drawSprite, CHAR_W, CHAR_H } from '../sprites';
 import { Heart, Sparkles } from 'lucide-react';
+
+// An EGA standing figure for a character (drawn to a small pixelated canvas).
+export const CharSprite: React.FC<{ classId: string; scale?: number; faded?: boolean }> = ({ classId, scale = 3, faded }) => {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const cv = ref.current;
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    drawSprite(ctx, charSpriteRows(classId), cv.width / 2, cv.height, scale);
+  }, [classId, scale]);
+  return (
+    <canvas
+      ref={ref}
+      width={CHAR_W * scale}
+      height={CHAR_H * scale}
+      style={{ imageRendering: 'pixelated', opacity: faded ? 0.4 : 1 }}
+    />
+  );
+};
 
 export const Btn: React.FC<{
   onClick?: () => void;
@@ -85,6 +107,55 @@ export const PartyBar: React.FC<{
             </div>
           )}
           {down && <div className="text-red-400 text-[10px] mt-0.5">倒下</div>}
+        </button>
+      );
+    })}
+  </div>
+);
+
+// MM2-style right-hand party roster with EGA standing figures.
+export const PartyPanel: React.FC<{
+  g: GameState;
+  active?: number;
+  highlight?: number;
+  onSelect?: (i: number) => void;
+}> = ({ g, active, highlight, onSelect }) => (
+  <div className="flex flex-row flex-wrap md:flex-col gap-1.5 w-full md:w-44">
+    {g.party.map((c, i) => {
+      const down = c.condition !== 'ok' || c.hp <= 0;
+      return (
+        <button
+          key={i}
+          onClick={() => onSelect?.(i)}
+          className={`flex gap-2 items-center text-left p-1.5 rounded-md border transition flex-1 md:flex-none min-w-[150px] ${
+            down ? 'opacity-50 border-mm-edge bg-black/40'
+              : highlight === i ? 'border-mm-neon bg-mm-neon/10 shadow-[0_0_12px_rgba(76,201,240,0.4)]'
+              : active === i ? 'border-mm-gold bg-mm-gold/10'
+              : 'border-mm-edge bg-mm-panel hover:bg-mm-edge'
+          }`}
+        >
+          <div className="bg-black/70 rounded border border-mm-edge/60 flex items-end justify-center shrink-0" style={{ width: 30, height: 36 }}>
+            <CharSprite classId={c.classId} scale={2} faded={down} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="font-bold text-mm-light truncate">{c.name}</span>
+              <span className="text-mm-light/50">L{c.level}</span>
+            </div>
+            <div className="text-mm-light/40 text-[9px] mb-0.5 flex items-center gap-1">
+              <span className="truncate">{classMap[c.classId].name}</span>
+              {(c.status?.poison || 0) > 0 && <span className="text-green-400" title="中毒">☠</span>}
+              {(c.status?.sleep || 0) > 0 && <span className="text-blue-300" title="沉睡">Z</span>}
+              {(c.status?.paralyze || 0) > 0 && <span className="text-yellow-300" title="麻痺">✋</span>}
+              {down && <span className="text-red-400">倒下</span>}
+            </div>
+            <Bar value={c.hp} max={c.maxHp} color="bg-red-500" icon={<Heart size={8} className="text-red-400" />} />
+            {c.maxSp > 0 && (
+              <div className="mt-0.5">
+                <Bar value={c.sp} max={c.maxSp} color="bg-blue-500" icon={<Sparkles size={8} className="text-blue-300" />} />
+              </div>
+            )}
+          </div>
         </button>
       );
     })}
