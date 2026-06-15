@@ -6,9 +6,10 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 3 — full loop.** Four towns, all monsters drawn as EGA sprites, a status
-> ailment system, and a complete endgame (the Sheltem confrontation + victory). Content stays
-> fully data-driven, so the world keeps growing toward a fuller MM2.
+> Status: **Milestone 4 — full EGA look + more content.** The whole screen is now rendered
+> through an EGA palette/pixelation pass, and a third dungeon (Sky Temple) with its boss and
+> quest has been added. Content stays fully data-driven, so the world keeps growing toward a
+> fuller MM2.
 
 ### Faithful-to-MM2 touches
 
@@ -63,6 +64,18 @@ A complete playthrough loop exercising every major system:
   Restore, Smite, Greater Protection, Sunray.
 - **Two new quests** across Atlantium (Crown of the Deep, the Ancient Scroll) that grant gear
   and teach a spell.
+
+### Milestone 4 — full EGA visuals & more content
+
+- **Whole-screen EGA pass** (`render.ts`) — every scene (first-person dungeon, overworld,
+  combat, title) runs through `egaPost`: a pixelation + nearest-colour snap to the 16-colour
+  EGA palette, so the entire game shares one cohesive retro look (canvas also renders
+  `pixelated`). Overworld tiles gained EGA-style detailing (grass speckle, water lines,
+  snow-capped peaks).
+- **Sky Temple** — a third dungeon reached from the southern overworld, guarded by the **Storm
+  Djinn** boss (drops the Sky Shard). New monsters: giant bat, stone golem, storm elemental,
+  storm djinn — all with EGA sprites. New gear (Storm Blade, Mithril Plate) and a new Atlantium
+  quest (the Astronomer teaches Lightning Bolt).
 
 ### Milestone 3 — more towns, full EGA bestiary, ailments & endgame
 
