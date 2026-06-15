@@ -191,12 +191,16 @@ export const MAPS: TileMap[] = [
       '16,7': { toMap: 'dungeon1', to: { x: 1, y: 1, dir: 1 }, label: '中央之門地城' },
       '2,2': { toMap: 'caverns1', to: { x: 1, y: 1, dir: 1 }, label: '沉沒洞窟' },
       '9,11': { toMap: 'sky_temple1', to: { x: 1, y: 1, dir: 1 }, label: '天空神殿' },
+      '2,7': { toMap: 'overworld', to: { x: 2, y: 7 }, toScreen: 'town', town: 'murkmire', label: '沼澤鎮 Murkmire' },
+      '16,4': { toMap: 'overworld', to: { x: 16, y: 4 }, toScreen: 'town', town: 'cliffport', label: '崖港 Cliffport' },
     },
     encounters: {
       '6,10': { monsters: [{ id: 'goblin', count: [1, 2] }, { id: 'kobold', count: [1, 2] }] },
       '9,6': { monsters: [{ id: 'wolf', count: [1, 3] }, { id: 'bandit', count: [1, 2] }] },
       '13,5': { monsters: [{ id: 'fire_drake', count: [1, 1] }, { id: 'harpy', count: [1, 2] }] },
       '13,9': { monsters: [{ id: 'troll', count: [1, 1] }, { id: 'wolf', count: [1, 2] }] },
+      '4,6': { monsters: [{ id: 'ghoul', count: [1, 2] }, { id: 'giant_bat', count: [1, 2] }] },
+      '12,7': { monsters: [{ id: 'gargoyle', count: [1, 1] }, { id: 'harpy', count: [1, 2] }] },
     },
   },
   {
@@ -225,7 +229,7 @@ export const MAPS: TileMap[] = [
     chests: {
       '10,9': { items: ['crystal_key'], gold: [20, 40] },
       '1,9': { gold: [30, 60], items: ['healing_potion', 'moonleaf'] },
-      '10,3': { gold: [15, 35], items: ['leather'] },
+      '10,3': { gold: [15, 35], items: ['leather'], trapped: true },
     },
     encounters: {
       '3,5': { monsters: [{ id: 'giant_rat', count: [2, 3] }, { id: 'kobold', count: [1, 2] }] },
@@ -263,6 +267,10 @@ export const MAPS: TileMap[] = [
       '5,3': { monsters: [{ id: 'orc', count: [1, 2] }, { id: 'cave_spider', count: [1, 2] }] },
       '8,5': { monsters: [{ id: 'zombie', count: [1, 2] }, { id: 'dark_acolyte', count: [1, 1] }] },
       '10,7': { monsters: [{ id: 'corrupt_guardian', count: [1, 1] }], once: true, boss: true, bossItem: 'orb_of_time', bossFlag: 'boss_dead' },
+    },
+    traps: {
+      '3,3': { damage: [8, 16], text: '🪤 地板射出毒針！' },
+      '8,6': { damage: [8, 16], text: '🪤 天花板落下火焰陷阱！' },
     },
     portals: {
       '1,1': { toMap: 'dungeon1', to: { x: 10, y: 1, dir: 3 }, label: '向上的階梯' },
@@ -333,6 +341,10 @@ export const MAPS: TileMap[] = [
       '8,5': { monsters: [{ id: 'minotaur', count: [1, 1] }, { id: 'fire_drake', count: [1, 1] }] },
       '10,7': { monsters: [{ id: 'sea_serpent', count: [1, 1] }], once: true, boss: true, bossItem: 'sea_crown', bossFlag: 'boss2_dead' },
     },
+    traps: {
+      '3,6': { damage: [10, 20], text: '🪤 腳下的石板崩塌！' },
+      '8,3': { damage: [10, 20], text: '🪤 暗箭從牆中射出！' },
+    },
     portals: {
       '1,1': { toMap: 'caverns1', to: { x: 10, y: 1, dir: 3 }, label: '向上的階梯' },
     },
@@ -363,6 +375,10 @@ export const MAPS: TileMap[] = [
       '5,3': { monsters: [{ id: 'giant_bat', count: [2, 3] }, { id: 'storm_elemental', count: [1, 1] }] },
       '8,5': { monsters: [{ id: 'stone_golem', count: [1, 1] }, { id: 'giant_bat', count: [1, 2] }] },
       '10,7': { monsters: [{ id: 'storm_djinn', count: [1, 1] }], once: true, boss: true, bossItem: 'sky_shard', bossFlag: 'djinn_dead' },
+    },
+    traps: {
+      '4,6': { damage: [12, 22], text: '🪤 符文地板釋放雷擊！' },
+      '7,3': { damage: [12, 22], text: '🪤 風刃從縫隙呼嘯而過！' },
     },
     portals: {
       '1,1': { toMap: 'overworld', to: { x: 9, y: 10, dir: 0 }, label: '回到地表' },
@@ -729,6 +745,64 @@ export const NPCS: NPCDef[] = [
       done: { id: 'done', text: '「藉著天空碎片，我看見了更遙遠的星辰。謝謝你，旅人。」', options: [{ label: '離開', action: { end: true } }] },
     },
   },
+  {
+    id: 'murkmire_hunter',
+    name: '沼澤獵人 卡爾',
+    nameEn: 'Karl the Hunter',
+    root: 'start',
+    entries: [
+      { cond: { questComplete: 'bounty_ghoul' }, node: 'done' },
+      { cond: { questActive: 'bounty_ghoul', cleared: 'overworld:4,6' }, node: 'reward' },
+      { cond: { questActive: 'bounty_ghoul' }, node: 'reminder' },
+    ],
+    nodes: {
+      start: {
+        id: 'start',
+        text: '「沼澤西邊鬧食屍鬼，連夜獵的弟兄都不敢去了。幫我清掉牠們，酬勞好說。」',
+        options: [
+          { label: '接下懸賞', to: 'accept', action: { giveQuest: 'bounty_ghoul' } },
+          { label: '改天吧', action: { end: true } },
+        ],
+      },
+      accept: { id: 'accept', text: '「食屍鬼群在地圖西側的沼澤。當心牠們的毒爪。」', options: [{ label: '了解', action: { end: true } }] },
+      reminder: { id: 'reminder', text: '「食屍鬼還在西邊沼澤呢。」', options: [{ label: '這就去', action: { end: true } }] },
+      reward: {
+        id: 'reward',
+        text: '「乾淨俐落！這瓶高級治療藥水和賞金是你的了。」',
+        options: [{ label: '領取懸賞', action: { completeQuest: 'bounty_ghoul', giveItem: 'greater_healing', end: true } }],
+      },
+      done: { id: 'done', text: '「沼澤安寧多了，獵人們都念你的好。」', options: [{ label: '離開', action: { end: true } }] },
+    },
+  },
+  {
+    id: 'cliffport_captain',
+    name: '崖港船長 蕾娜',
+    nameEn: 'Captain Lena',
+    root: 'start',
+    entries: [
+      { cond: { questComplete: 'bounty_gargoyle' }, node: 'done' },
+      { cond: { questActive: 'bounty_gargoyle', cleared: 'overworld:12,7' }, node: 'reward' },
+      { cond: { questActive: 'bounty_gargoyle' }, node: 'reminder' },
+    ],
+    nodes: {
+      start: {
+        id: 'start',
+        text: '「一隻石像鬼盤踞在港口東邊的崖頂，俯衝攻擊我的水手。除掉牠，崖港會重謝你。」',
+        options: [
+          { label: '接下懸賞', to: 'accept', action: { giveQuest: 'bounty_gargoyle' } },
+          { label: '考慮一下', action: { end: true } },
+        ],
+      },
+      accept: { id: 'accept', text: '「石像鬼在地圖中央偏東。牠的石皮很硬，小心。」', options: [{ label: '了解', action: { end: true } }] },
+      reminder: { id: 'reminder', text: '「石像鬼還在崖頂肆虐呢。」', options: [{ label: '這就去', action: { end: true } }] },
+      reward: {
+        id: 'reward',
+        text: '「水手們安全了！這枚力量之戒是崖港的謝禮。」',
+        options: [{ label: '領取懸賞', action: { completeQuest: 'bounty_gargoyle', giveItem: 'ring_might', end: true } }],
+      },
+      done: { id: 'done', text: '「航道恢復繁忙了，謝謝你，英雄。」', options: [{ label: '離開', action: { end: true } }] },
+    },
+  },
 ];
 
 export const QUESTS: QuestDef[] = [
@@ -741,6 +815,8 @@ export const QUESTS: QuestDef[] = [
   { id: 'caverns_quest', name: '海皇冠冕', nameEn: 'Crown of the Deep', giver: 'atlantium_tavern', itemRequired: 'sea_crown', desc: '從沉沒洞窟的深海巨蛇手中取回海皇冠冕。', hint: '需要符文鑰匙（洞窟一層）才能進入深淵，擊敗深海巨蛇。', rewardGold: 900, rewardXp: 700 },
   { id: 'sage_quest', name: '遠古卷軸', nameEn: 'The Ancient Scroll', giver: 'sage', itemRequired: 'ancient_scroll', desc: '為智者賽吉尋回沉沒洞窟中的遠古卷軸。', hint: '遠古卷軸在沉沒洞窟一層的寶箱中。', rewardGold: 300, rewardXp: 240 },
   { id: 'sky_quest', name: '天空碎片', nameEn: 'The Sky Shard', giver: 'astronomer', itemRequired: 'sky_shard', desc: '從天空神殿的雷霆精靈王手中取回天空碎片。', hint: '天空神殿入口在戶外地圖南方。', rewardGold: 450, rewardXp: 380 },
+  { id: 'bounty_ghoul', name: '懸賞：沼澤食屍鬼', nameEn: 'Bounty: Marsh Ghouls', giver: 'murkmire_hunter', clearCell: 'overworld:4,6', desc: '清除沼澤西邊的食屍鬼群。', hint: '食屍鬼在戶外地圖西側。', rewardGold: 240, rewardXp: 190 },
+  { id: 'bounty_gargoyle', name: '懸賞：崖頂石像鬼', nameEn: 'Bounty: Cliff Gargoyle', giver: 'cliffport_captain', clearCell: 'overworld:12,7', desc: '擊殺盤踞崖頂的石像鬼。', hint: '石像鬼在戶外地圖中央偏東。', rewardGold: 320, rewardXp: 260 },
 ];
 
 // ---------- Shops ----------
@@ -783,6 +859,18 @@ export const TOWNS: TownDef[] = [
     desc: '建於火山口的鍛造之城，盛產利刃與烈焰法術。',
     shops: ['master_smith', 'arcane_emporium'],
     npcs: ['vulcania_smith', 'townsfolk'],
+  },
+  {
+    id: 'murkmire', name: '沼澤鎮 Murkmire', nameEn: 'Murkmire',
+    desc: '霧氣瀰漫的沼澤聚落，獵人與藥師的家園。',
+    shops: ['weapon_smith', 'magic_guild'],
+    npcs: ['murkmire_hunter', 'townsfolk'],
+  },
+  {
+    id: 'cliffport', name: '崖港 Cliffport', nameEn: 'Cliffport',
+    desc: '懸崖邊的港都，水手與傭兵聚集之地。',
+    shops: ['master_armory', 'master_smith'],
+    npcs: ['cliffport_captain', 'townsfolk'],
   },
 ];
 

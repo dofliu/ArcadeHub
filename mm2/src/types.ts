@@ -12,6 +12,7 @@ export type Screen =
   | 'sheet'
   | 'quests'
   | 'hire'
+  | 'train'
   | 'victory'
   | 'gameover';
 
@@ -149,7 +150,13 @@ export interface TileMap {
   doors?: Record<string, DoorDef>;
   portals?: Record<string, Portal>;   // step here to travel
   npcs?: Record<string, string>;      // cell -> npc id (overworld/town markers)
+  traps?: Record<string, TrapDef>;    // "x,y" -> trap
   start?: { x: number; y: number; dir: Dir };
+}
+
+export interface TrapDef {
+  damage: [number, number];
+  text?: string;
 }
 
 export interface EncounterDef {
@@ -304,10 +311,19 @@ export interface GameState {
   clearedEncounters: string[]; // "mapId:x,y"
   lootedChests: string[];
   openedDoors: string[];
+  triggeredTraps: string[];    // "mapId:x,y"
   combat: Combat | null;
   dialog: { npcId: string; node: string } | null;
   shopId: string | null;
   log: string[];
   messages: string[];      // transient toasts (top)
   sfx: string[];           // queued sound-effect event names (flushed by the UI)
+  fx: CombatFx[];          // queued combat visual effects (flushed by the UI)
+}
+
+export interface CombatFx {
+  kind: 'hit' | 'crit' | 'spell' | 'heal' | 'death' | 'partyhit';
+  side: 'monster' | 'party';
+  idx: number;
+  element?: string;
 }

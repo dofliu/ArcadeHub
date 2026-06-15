@@ -5,16 +5,18 @@ import { charSpriteRows, drawSprite, CHAR_W, CHAR_H } from '../sprites';
 import { Heart, Sparkles } from 'lucide-react';
 
 // An EGA standing figure for a character (drawn to a small pixelated canvas).
-export const CharSprite: React.FC<{ classId: string; scale?: number; faded?: boolean }> = ({ classId, scale = 3, faded }) => {
+export const CharSprite: React.FC<{ char: Character; scale?: number; faded?: boolean }> = ({ char, scale = 3, faded }) => {
   const ref = useRef<HTMLCanvasElement>(null);
+  const weaponId = char.equipment.weapon;
+  const armorId = char.equipment.armor;
   useEffect(() => {
     const cv = ref.current;
     if (!cv) return;
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, cv.width, cv.height);
-    drawSprite(ctx, charSpriteRows(classId), cv.width / 2, cv.height, scale);
-  }, [classId, scale]);
+    drawSprite(ctx, charSpriteRows(char.classId, { raceId: char.raceId, weaponId, armorId }), cv.width / 2, cv.height, scale);
+  }, [char.classId, char.raceId, weaponId, armorId, scale]);
   return (
     <canvas
       ref={ref}
@@ -135,7 +137,7 @@ export const PartyPanel: React.FC<{
           }`}
         >
           <div className="bg-black/70 rounded border border-mm-edge/60 flex items-end justify-center shrink-0" style={{ width: 30, height: 36 }}>
-            <CharSprite classId={c.classId} scale={2} faded={down} />
+            <CharSprite char={c} scale={2} faded={down} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-center text-[11px]">
