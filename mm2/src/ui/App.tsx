@@ -4,7 +4,7 @@ import * as E from '../engine';
 import { mapMap, questMap } from '../data/content';
 import { drawDungeon, drawOverworld, drawCombat, drawTitle, CW, CH } from '../render';
 import { soundService, Sfx } from '../sound';
-import { Btn, Panel, PartyBar } from './common';
+import { Btn, Panel, PartyPanel } from './common';
 import {
   CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen, HireScreen,
 } from './screens';
@@ -137,8 +137,9 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Main */}
-      <main className="w-full max-w-4xl flex flex-col items-center gap-3">
+      {/* Main + right-hand party roster */}
+      <div className="w-full max-w-5xl flex flex-col md:flex-row md:items-start md:justify-center gap-3">
+      <main className="flex-1 min-w-0 max-w-3xl flex flex-col items-center gap-3">
         {showCanvas && (
           <div className="relative">
             <canvas ref={canvasRef} width={CW} height={CH} style={{ imageRendering: 'pixelated' }} className="rounded-lg border-2 border-mm-edge shadow-2xl bg-black max-w-full" />
@@ -228,12 +229,6 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* Party bar */}
-        {g.party.length > 0 && ['overworld', 'dungeon', 'combat', 'town', 'shop', 'dialog'].includes(g.screen) && (
-          <PartyBar g={g} highlight={g.screen === 'combat' ? E.currentActor(g)?.idx : undefined}
-            onSelect={(i) => { setSheetActive(i); apply(d => { d.screen = 'sheet'; }); }} />
-        )}
-
         {/* Quest tracker */}
         {g.quests['orb_quest'] && g.quests['orb_quest'] !== 'complete' && ['town', 'overworld', 'dungeon'].includes(g.screen) && (
           <Panel className="w-full text-xs">
@@ -260,6 +255,15 @@ export const App: React.FC = () => {
           </Panel>
         )}
       </main>
+
+      {g.party.length > 0 && !['title', 'create'].includes(g.screen) && (
+        <aside className="w-full md:w-44 md:sticky md:top-4">
+          <div className="font-rune text-mm-gold text-xs mb-1 hidden md:block">隊伍</div>
+          <PartyPanel g={g} highlight={g.screen === 'combat' ? E.currentActor(g)?.idx : undefined}
+            onSelect={(i) => { setSheetActive(i); apply(d => { d.screen = 'sheet'; }); }} />
+        </aside>
+      )}
+      </div>
 
       <footer className="text-mm-light/30 text-xs mt-6">
         Original tribute · not affiliated with the Might &amp; Magic franchise.
