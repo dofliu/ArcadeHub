@@ -416,7 +416,31 @@ export function drawSprite(
   }
 }
 
-// ===== Original EGA standing figures for the party (paper-doll style). =====
+// Draw the sprite's silhouette in one colour (used for outlines/shadows).
+export function drawSilhouette(
+  ctx: CanvasRenderingContext2D,
+  rows: string[],
+  cx: number,
+  baseY: number,
+  px: number,
+  color: string,
+) {
+  const h = rows.length;
+  const w = rows.reduce((m, r) => Math.max(m, r.length), 0);
+  const x0 = Math.round(cx - (w * px) / 2);
+  const y0 = Math.round(baseY - h * px);
+  ctx.fillStyle = color;
+  for (let y = 0; y < h; y++) {
+    const row = rows[y];
+    for (let x = 0; x < row.length; x++) {
+      const ch = row[x];
+      if (ch === '.' || ch === ' ') continue;
+      if (Number.isNaN(parseInt(ch, 16))) continue;
+      ctx.fillRect(x0 + x * px, y0 + y * px, px, px);
+    }
+  }
+}
+
 // A single humanoid template; symbolic cells (K skin, H head/helm, C garb,
 // D trim, W weapon, E eye) are recoloured per class — pure data.
 const CHAR_TEMPLATE: string[] = [
