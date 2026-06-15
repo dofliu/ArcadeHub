@@ -73,16 +73,92 @@ function isDoor(grid: string[], doors: Record<string, any> | undefined, x: numbe
   return !!doors?.[`${x},${y}`];
 }
 
+// ---- original procedural stone/brick helpers (no copied assets) ----
+function stone(b: number) { return `rgb(${b | 0},${(b * 0.82) | 0},${(b * 0.58) | 0})`; }
+function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
+
+// Brick-textured front wall (a flat rectangle facing the viewer).
+function brickFront(ctx: CanvasRenderingContext2D, l: number, t: number, r: number, b: number, base: number) {
+  const w = r - l, h = b - t;
+  if (w < 2 || h < 2) return;
+  ctx.fillStyle = stone(base);
+  ctx.fillRect(l, t, w, h);
+  ctx.strokeStyle = stone(Math.max(8, base - 34));
+  ctx.lineWidth = 1;
+  const courses = Math.max(3, Math.round(h / 16));
+  const ch = h / courses;
+  const bw = Math.max(10, w / 4);
+  ctx.beginPath();
+  for (let i = 1; i < courses; i++) { const y = t + i * ch; ctx.moveTo(l, y); ctx.lineTo(r, y); }
+  for (let i = 0; i < courses; i++) {
+    const y0 = t + i * ch, y1 = y0 + ch;
+    const off = (i % 2) * (bw / 2);
+    for (let x = l + off; x < r; x += bw) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
+  }
+  ctx.stroke();
+  // top highlight / bottom shadow for a little relief
+  ctx.fillStyle = stone(Math.min(255, base + 22)); ctx.fillRect(l, t, w, 1);
+  ctx.fillStyle = stone(Math.max(6, base - 26)); ctx.fillRect(l, b - 1, w, 1);
+}
+
+// Brick-textured side wall (a receding trapezoid).
+function brickSide(ctx: CanvasRenderingContext2D, nx: number, fx: number, near: { t: number; b: number }, far: { t: number; b: number }, base: number) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(nx, near.t); ctx.lineTo(fx, far.t); ctx.lineTo(fx, far.b); ctx.lineTo(nx, near.b); ctx.closePath();
+  ctx.fillStyle = stone(base); ctx.fill();
+  ctx.clip();
+  ctx.strokeStyle = stone(Math.max(8, base - 34)); ctx.lineWidth = 1;
+  ctx.beginPath();
+  const courses = 6;
+  for (let i = 1; i < courses; i++) {
+    const f = i / courses;
+    ctx.moveTo(nx, lerp(near.t, near.b, f)); ctx.lineTo(fx, lerp(far.t, far.b, f));
+  }
+  for (let j = 1; j <= 4; j++) {
+    const f = j / 5;
+    const x = lerp(nx, fx, f);
+    ctx.moveTo(x, lerp(near.t, far.t, f)); ctx.lineTo(x, lerp(near.b, far.b, f));
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+// Perspective-tiled floor and ceiling grid lines (vanishing at the centre).
+function floorCeil(ctx: CanvasRenderingContext2D, depthYs: { t: number; b: number; l: number; r: number }[], litBase: number) {
+  ctx.fillStyle = stone(litBase * 0.5); ctx.fillRect(0, 0, CW, CY);       // ceiling
+  ctx.fillStyle = stone(litBase * 0.72); ctx.fillRect(0, CY, CW, CH - CY); // floor
+  ctx.strokeStyle = stone(Math.max(8, litBase * 0.45)); ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const d of depthYs) {
+    ctx.moveTo(0, d.b); ctx.lineTo(CW, d.b); // floor course
+    ctx.moveTo(0, d.t); ctx.lineTo(CW, d.t); // ceiling course
+  }
+  // converging verticals
+  for (const x of [0, CW * 0.25, CW * 0.5, CW * 0.75, CW]) {
+    ctx.moveTo(x, CH); ctx.lineTo(CX, CY);
+    ctx.moveTo(x, 0); ctx.lineTo(CX, CY);
+  }
+  ctx.stroke();
+}
+
+// MM2-style bright frame around the viewport.
+function viewFrame(ctx: CanvasRenderingContext2D) {
+  ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 2;
+  ctx.strokeRect(3, 3, CW - 6, CH - 6);
+  ctx.lineWidth = 1;
+  ctx.strokeRect(7, 7, CW - 14, CH - 14);
+}
+
 export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState) {
   const map = mapMap[g.pos.mapId];
   const grid = map.grid;
   const lit = !!g.flags['light'];
+  const litBase = lit ? 120 : 78;
 
-  // ceiling / floor
-  ctx.fillStyle = lit ? '#1a1330' : '#0c0913';
-  ctx.fillRect(0, 0, CW, CH / 2);
-  ctx.fillStyle = lit ? '#2a2440' : '#171327';
-  ctx.fillRect(0, CH / 2, CW, CH / 2);
+  const depths = [];
+  for (let d = 0; d <= 5; d++) depths.push(opening(d));
+  floorCeil(ctx, depths, litBase);
 
   const fwd = DIRV[g.pos.dir];
   const left = DIRV[(g.pos.dir + 3) % 4];
@@ -92,32 +168,29 @@ export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState) {
 
   for (let s = 0; s <= maxDepth; s++) {
     const near = opening(s), far = opening(s + 1);
-    const base = lit ? 40 : 18;
-    const sideShade = Math.max(12, (lit ? 96 : 70) - s * 14);
-    const frontShade = Math.max(base, (lit ? 120 : 96) - s * 16);
-    const sideColor = `rgb(${sideShade},${sideShade - 6},${sideShade + 14})`;
-    const frontColor = `rgb(${frontShade},${frontShade - 8},${frontShade + 16})`;
+    const sideBase = Math.max(20, (lit ? 150 : 105) - s * 22);
+    const frontBase = Math.max(26, (lit ? 175 : 125) - s * 24);
 
-    // left/right walls
     if (isSolid(grid, cx + left.x, cy + left.y) || isDoorClosed(g, cx + left.x, cy + left.y)) {
-      quad(ctx, [near.l, near.t, far.l, far.t, far.l, far.b, near.l, near.b], sideColor);
+      brickSide(ctx, near.l, far.l, { t: near.t, b: near.b }, { t: far.t, b: far.b }, sideBase);
     }
     if (isSolid(grid, cx + right.x, cy + right.y) || isDoorClosed(g, cx + right.x, cy + right.y)) {
-      quad(ctx, [near.r, near.t, far.r, far.t, far.r, far.b, near.r, near.b], sideColor);
+      brickSide(ctx, near.r, far.r, { t: near.t, b: near.b }, { t: far.t, b: far.b }, sideBase);
     }
-    // front
     const fx = cx + fwd.x, fy = cy + fwd.y;
     const frontDoorClosed = isDoorClosed(g, fx, fy);
-    if (isSolid(grid, fx, fy) || frontDoorClosed) {
-      ctx.fillStyle = frontDoorClosed ? '#5a3e8c' : frontColor;
-      ctx.fillRect(far.l, far.t, far.r - far.l, far.b - far.t);
-      if (frontDoorClosed) {
-        ctx.fillStyle = '#e7b53b';
-        ctx.fillRect((far.l + far.r) / 2 - (far.r - far.l) * 0.06, (far.t + far.b) / 2, (far.r - far.l) * 0.12, (far.b - far.t) * 0.12);
-      }
+    if (isSolid(grid, fx, fy)) {
+      brickFront(ctx, far.l, far.t, far.r, far.b, frontBase);
       break;
     }
-    // floor markers for special cells ahead
+    if (frontDoorClosed) {
+      // arched runed door
+      ctx.fillStyle = '#3a2f5c'; ctx.fillRect(far.l, far.t, far.r - far.l, far.b - far.t);
+      ctx.strokeStyle = '#7c5cff'; ctx.lineWidth = 2; ctx.strokeRect(far.l + 3, far.t + 3, far.r - far.l - 6, far.b - far.t - 6);
+      ctx.fillStyle = '#e7b53b';
+      ctx.fillRect((far.l + far.r) / 2 - (far.r - far.l) * 0.05, (far.t + far.b) / 2, (far.r - far.l) * 0.1, (far.b - far.t) * 0.14);
+      break;
+    }
     const fkey = `${fx},${fy}`;
     const gkey = `${map.id}:${fkey}`;
     if (map.portals?.[fkey]) marker(ctx, far, '#4cc9f0');
@@ -126,6 +199,7 @@ export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState) {
     cx = fx; cy = fy;
   }
   egaPost(ctx);
+  viewFrame(ctx);
 }
 
 function isDoorClosed(g: GameState, x: number, y: number): boolean {
@@ -199,16 +273,25 @@ export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState) {
   ctx.closePath(); ctx.fill();
   ctx.textAlign = 'start';
   egaPost(ctx);
+  viewFrame(ctx);
 }
 
 export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
-  const grad = ctx.createLinearGradient(0, 0, 0, CH);
-  grad.addColorStop(0, '#1a0a1e');
-  grad.addColorStop(1, '#06060c');
-  ctx.fillStyle = grad;
+  // textured stone room: brick back wall + tiled floor + side walls
+  ctx.fillStyle = stone(40);
   ctx.fillRect(0, 0, CW, CH);
+  const floorY = CH * 0.66;
+  brickFront(ctx, 0, 0, CW, floorY, 78);             // back wall
+  // perspective floor
+  ctx.fillStyle = stone(54);
+  ctx.fillRect(0, floorY, CW, CH - floorY);
+  ctx.strokeStyle = stone(28); ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let i = 1; i <= 5; i++) { const y = floorY + ((CH - floorY) * i) / 5; ctx.moveTo(0, y); ctx.lineTo(CW, y); }
+  for (const x of [0, CW * 0.2, CW * 0.4, CW * 0.6, CW * 0.8, CW]) { ctx.moveTo(x, CH); ctx.lineTo(CX, floorY); }
+  ctx.stroke();
   const c = g.combat;
-  if (!c) return;
+  if (!c) { egaPost(ctx); viewFrame(ctx); return; }
   const n = c.monsters.length;
   c.monsters.forEach((m, i) => {
     const def = monsterMap[m.defId];
@@ -260,6 +343,7 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
   ctx.font = '13px monospace';
   ctx.fillText(`ROUND ${c.round}`, 12, 22);
   egaPost(ctx);
+  viewFrame(ctx);
 }
 
 // Screen position of monster `i`, matching drawCombat's layout.
