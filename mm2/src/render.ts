@@ -73,92 +73,96 @@ function isDoor(grid: string[], doors: Record<string, any> | undefined, x: numbe
   return !!doors?.[`${x},${y}`];
 }
 
-// ---- original procedural stone/brick helpers (no copied assets) ----
-function stone(b: number) { return `rgb(${b | 0},${(b * 0.82) | 0},${(b * 0.58) | 0})`; }
+// ---- original procedural VGA stone/brick helpers (no copied assets) ----
 function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
-
-// Brick-textured front wall (a flat rectangle facing the viewer).
-function brickFront(ctx: CanvasRenderingContext2D, l: number, t: number, r: number, b: number, base: number) {
-  const w = r - l, h = b - t;
-  if (w < 2 || h < 2) return;
-  ctx.fillStyle = stone(base);
-  ctx.fillRect(l, t, w, h);
-  ctx.strokeStyle = stone(Math.max(8, base - 34));
-  ctx.lineWidth = 1;
-  const courses = Math.max(3, Math.round(h / 16));
-  const ch = h / courses;
-  const bw = Math.max(10, w / 4);
-  ctx.beginPath();
-  for (let i = 1; i < courses; i++) { const y = t + i * ch; ctx.moveTo(l, y); ctx.lineTo(r, y); }
-  for (let i = 0; i < courses; i++) {
-    const y0 = t + i * ch, y1 = y0 + ch;
-    const off = (i % 2) * (bw / 2);
-    for (let x = l + off; x < r; x += bw) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
-  }
-  ctx.stroke();
-  // top highlight / bottom shadow for a little relief
-  ctx.fillStyle = stone(Math.min(255, base + 22)); ctx.fillRect(l, t, w, 1);
-  ctx.fillStyle = stone(Math.max(6, base - 26)); ctx.fillRect(l, b - 1, w, 1);
+// Warm stone colour at brightness level 0..1 (tan/brown like a torchlit dungeon).
+function stoneC(level: number, tint = 1) {
+  const L = Math.max(0, Math.min(1, level));
+  const r = Math.round(34 + L * 168) * tint;
+  const g = Math.round(28 + L * 132) * tint;
+  const b = Math.round(20 + L * 92) * tint;
+  return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
 }
 
-// Brick-textured side wall (a receding trapezoid).
-function brickSide(ctx: CanvasRenderingContext2D, nx: number, fx: number, near: { t: number; b: number }, far: { t: number; b: number }, base: number) {
+// Beveled brick panel facing the viewer (the showpiece wall).
+function brickPanel(ctx: CanvasRenderingContext2D, l: number, t: number, r: number, b: number, level: number) {
+  const w = r - l, h = b - t;
+  if (w < 2 || h < 2) return;
+  ctx.fillStyle = stoneC(level - 0.42); // mortar
+  ctx.fillRect(l, t, w, h);
+  const bh = Math.max(7, h / 7);
+  const bw = Math.max(16, w / 4);
+  const gap = Math.max(1, Math.round(bh * 0.16));
+  let row = 0;
+  for (let y = t; y < b - 1; y += bh) {
+    const off = (row % 2) * (bw / 2);
+    for (let x = l - off; x < r - 1; x += bw) {
+      const bx = Math.max(l, x), by = Math.max(t, y);
+      const bxw = Math.min(r, x + bw - gap) - bx;
+      const bhh = Math.min(b, y + bh - gap) - by;
+      if (bxw <= 1 || bhh <= 1) continue;
+      ctx.fillStyle = stoneC(level + (Math.random() < 0.5 ? 0 : 0.04));
+      ctx.fillRect(bx, by, bxw, bhh);
+      ctx.fillStyle = stoneC(level + 0.2);             // top-left highlight
+      ctx.fillRect(bx, by, bxw, 1); ctx.fillRect(bx, by, 1, bhh);
+      ctx.fillStyle = stoneC(level - 0.26);            // bottom-right shadow
+      ctx.fillRect(bx, by + bhh - 1, bxw, 1); ctx.fillRect(bx + bxw - 1, by, 1, bhh);
+    }
+    row++;
+  }
+}
+
+// Receding side wall (trapezoid): fill + depth gradient + brick courses/joints.
+function sideWall(ctx: CanvasRenderingContext2D, nx: number, fx: number, near: { t: number; b: number }, far: { t: number; b: number }, level: number) {
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(nx, near.t); ctx.lineTo(fx, far.t); ctx.lineTo(fx, far.b); ctx.lineTo(nx, near.b); ctx.closePath();
-  ctx.fillStyle = stone(base); ctx.fill();
   ctx.clip();
-  ctx.strokeStyle = stone(Math.max(8, base - 34)); ctx.lineWidth = 1;
+  const x0 = Math.min(nx, fx), x1 = Math.max(nx, fx);
+  ctx.fillStyle = stoneC(level - 0.08);
+  ctx.fillRect(x0, 0, x1 - x0, CH);
+  const grad = ctx.createLinearGradient(nx, 0, fx, 0);
+  grad.addColorStop(0, 'rgba(255,235,200,0.10)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = grad; ctx.fillRect(x0, 0, x1 - x0, CH);
+  ctx.strokeStyle = stoneC(level - 0.4); ctx.lineWidth = 1;
   ctx.beginPath();
-  const courses = 6;
-  for (let i = 1; i < courses; i++) {
-    const f = i / courses;
-    ctx.moveTo(nx, lerp(near.t, near.b, f)); ctx.lineTo(fx, lerp(far.t, far.b, f));
-  }
-  for (let j = 1; j <= 4; j++) {
-    const f = j / 5;
-    const x = lerp(nx, fx, f);
-    ctx.moveTo(x, lerp(near.t, far.t, f)); ctx.lineTo(x, lerp(near.b, far.b, f));
-  }
+  for (let i = 1; i < 6; i++) { const f = i / 6; ctx.moveTo(nx, lerp(near.t, near.b, f)); ctx.lineTo(fx, lerp(far.t, far.b, f)); }
+  for (let j = 1; j <= 4; j++) { const f = j / 5; const x = lerp(nx, fx, f); ctx.moveTo(x, lerp(near.t, far.t, f)); ctx.lineTo(x, lerp(near.b, far.b, f)); }
   ctx.stroke();
   ctx.restore();
-}
-
-// Perspective-tiled floor and ceiling grid lines (vanishing at the centre).
-function floorCeil(ctx: CanvasRenderingContext2D, depthYs: { t: number; b: number; l: number; r: number }[], litBase: number) {
-  ctx.fillStyle = stone(litBase * 0.5); ctx.fillRect(0, 0, CW, CY);       // ceiling
-  ctx.fillStyle = stone(litBase * 0.72); ctx.fillRect(0, CY, CW, CH - CY); // floor
-  ctx.strokeStyle = stone(Math.max(8, litBase * 0.45)); ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (const d of depthYs) {
-    ctx.moveTo(0, d.b); ctx.lineTo(CW, d.b); // floor course
-    ctx.moveTo(0, d.t); ctx.lineTo(CW, d.t); // ceiling course
-  }
-  // converging verticals
-  for (const x of [0, CW * 0.25, CW * 0.5, CW * 0.75, CW]) {
-    ctx.moveTo(x, CH); ctx.lineTo(CX, CY);
-    ctx.moveTo(x, 0); ctx.lineTo(CX, CY);
-  }
-  ctx.stroke();
 }
 
 // MM2-style bright frame around the viewport.
 function viewFrame(ctx: CanvasRenderingContext2D) {
   ctx.strokeStyle = '#4cc9f0'; ctx.lineWidth = 2;
   ctx.strokeRect(3, 3, CW - 6, CH - 6);
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#1d6e8c'; ctx.lineWidth = 1;
   ctx.strokeRect(7, 7, CW - 14, CH - 14);
 }
 
-export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState) {
+export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState, vga = true) {
   const map = mapMap[g.pos.mapId];
   const grid = map.grid;
   const lit = !!g.flags['light'];
-  const litBase = lit ? 120 : 78;
+  const amb = lit ? 0.95 : 0.6; // ambient brightness
 
-  const depths = [];
-  for (let d = 0; d <= 5; d++) depths.push(opening(d));
-  floorCeil(ctx, depths, litBase);
+  // ceiling + floor base
+  ctx.fillStyle = stoneC(0.1 * amb); ctx.fillRect(0, 0, CW, CY);
+  ctx.fillStyle = stoneC(0.34 * amb); ctx.fillRect(0, CY, CW, CH - CY);
+  // perspective-tiled floor & ceiling (alternating courses, full width; walls drawn over)
+  const op: ReturnType<typeof opening>[] = [];
+  for (let d = 0; d <= 5; d++) op.push(opening(d));
+  for (let d = 0; d < 5; d++) {
+    const fNear = op[d].b, fFar = op[d + 1].b;
+    if (fNear > fFar) { ctx.fillStyle = stoneC((0.46 - d * 0.06 + (d % 2) * 0.07) * amb); ctx.fillRect(0, fFar, CW, fNear - fFar); }
+    const cNear = op[d].t, cFar = op[d + 1].t;
+    if (cFar > cNear) { ctx.fillStyle = stoneC((0.13 + (d % 2) * 0.05) * amb); ctx.fillRect(0, cNear, CW, cFar - cNear); }
+  }
+  // faint converging guide lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.22)'; ctx.lineWidth = 1; ctx.beginPath();
+  for (const x of [CW * 0.12, CW * 0.32, CW * 0.68, CW * 0.88]) { ctx.moveTo(x, CH); ctx.lineTo(CX, CY); ctx.moveTo(x, 0); ctx.lineTo(CX, CY); }
+  ctx.stroke();
 
   const fwd = DIRV[g.pos.dir];
   const left = DIRV[(g.pos.dir + 3) % 4];
@@ -168,27 +172,28 @@ export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState) {
 
   for (let s = 0; s <= maxDepth; s++) {
     const near = opening(s), far = opening(s + 1);
-    const sideBase = Math.max(20, (lit ? 150 : 105) - s * 22);
-    const frontBase = Math.max(26, (lit ? 175 : 125) - s * 24);
+    const sideLevel = Math.max(0.12, (lit ? 0.72 : 0.5) - s * 0.13);
+    const frontLevel = Math.max(0.16, (lit ? 0.86 : 0.62) - s * 0.14);
 
     if (isSolid(grid, cx + left.x, cy + left.y) || isDoorClosed(g, cx + left.x, cy + left.y)) {
-      brickSide(ctx, near.l, far.l, { t: near.t, b: near.b }, { t: far.t, b: far.b }, sideBase);
+      sideWall(ctx, near.l, far.l, { t: near.t, b: near.b }, { t: far.t, b: far.b }, sideLevel);
     }
     if (isSolid(grid, cx + right.x, cy + right.y) || isDoorClosed(g, cx + right.x, cy + right.y)) {
-      brickSide(ctx, near.r, far.r, { t: near.t, b: near.b }, { t: far.t, b: far.b }, sideBase);
+      sideWall(ctx, near.r, far.r, { t: near.t, b: near.b }, { t: far.t, b: far.b }, sideLevel);
     }
     const fx = cx + fwd.x, fy = cy + fwd.y;
     const frontDoorClosed = isDoorClosed(g, fx, fy);
     if (isSolid(grid, fx, fy)) {
-      brickFront(ctx, far.l, far.t, far.r, far.b, frontBase);
+      brickPanel(ctx, far.l, far.t, far.r, far.b, frontLevel);
       break;
     }
     if (frontDoorClosed) {
-      // arched runed door
-      ctx.fillStyle = '#3a2f5c'; ctx.fillRect(far.l, far.t, far.r - far.l, far.b - far.t);
-      ctx.strokeStyle = '#7c5cff'; ctx.lineWidth = 2; ctx.strokeRect(far.l + 3, far.t + 3, far.r - far.l - 6, far.b - far.t - 6);
+      brickPanel(ctx, far.l, far.t, far.r, far.b, frontLevel);
+      const dw = far.r - far.l, dh = far.b - far.t;
+      ctx.fillStyle = '#241a3a'; ctx.fillRect(far.l + dw * 0.2, far.t + dh * 0.12, dw * 0.6, dh * 0.88);
+      ctx.strokeStyle = '#7c5cff'; ctx.lineWidth = 2; ctx.strokeRect(far.l + dw * 0.2, far.t + dh * 0.12, dw * 0.6, dh * 0.88);
       ctx.fillStyle = '#e7b53b';
-      ctx.fillRect((far.l + far.r) / 2 - (far.r - far.l) * 0.05, (far.t + far.b) / 2, (far.r - far.l) * 0.1, (far.b - far.t) * 0.14);
+      ctx.fillRect(far.l + dw * 0.55, far.t + dh * 0.5, dw * 0.06, dh * 0.12);
       break;
     }
     const fkey = `${fx},${fy}`;
@@ -198,7 +203,7 @@ export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState) {
     else if (map.encounters?.[fkey] && !g.clearedEncounters.includes(gkey)) marker(ctx, far, '#9b2226');
     cx = fx; cy = fy;
   }
-  egaPost(ctx);
+  if (!vga) egaPost(ctx);
   viewFrame(ctx);
 }
 
@@ -213,7 +218,7 @@ function marker(ctx: CanvasRenderingContext2D, far: ReturnType<typeof opening>, 
   ctx.fillRect(far.l + (far.r - far.l) * 0.25, far.b - 8, (far.r - far.l) * 0.5, 6);
 }
 
-export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState) {
+export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState, vga = true) {
   const map = mapMap[g.pos.mapId];
   const grid = map.grid;
   const rows = grid.length, cols = grid[0].length;
@@ -221,38 +226,50 @@ export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState) {
   const ox = Math.floor((CW - tile * cols) / 2);
   const oy = Math.floor((CH - tile * rows) / 2);
 
-  const colors: Record<string, string> = {
-    '#': '#2b2540', '.': '#3f6b3f', '~': '#27496d', '^': '#5b5b6b', 'T': '#234d20', 'S': '#3f6b3f',
-  };
+  ctx.fillStyle = '#0b0a14'; ctx.fillRect(0, 0, CW, CH);
   for (let y = 0; y < rows; y++) {
     for (let x = 0; x < cols; x++) {
       const ch = grid[y][x];
-      const tx = ox + x * tile, ty = oy + y * tile;
-      ctx.fillStyle = colors[ch] || '#3f6b3f';
-      ctx.fillRect(tx, ty, tile - 1, tile - 1);
-      // EGA-style tile detailing (deterministic per cell)
-      if (ch === '.' || ch === 'S') {
-        ctx.fillStyle = '#2f5530';
-        if ((x + y) % 2 === 0) ctx.fillRect(tx + tile * 0.25, ty + tile * 0.55, 2, 2);
-        if ((x * 3 + y) % 3 === 0) ctx.fillRect(tx + tile * 0.65, ty + tile * 0.3, 2, 2);
+      const tx = ox + x * tile, ty = oy + y * tile, T = tile;
+      if (ch === '#') {
+        ctx.fillStyle = '#241f33'; ctx.fillRect(tx, ty, T, T);
       } else if (ch === '~') {
-        ctx.fillStyle = '#3a6ea5';
-        ctx.fillRect(tx + tile * 0.15, ty + tile * 0.35, tile * 0.4, 2);
-        ctx.fillRect(tx + tile * 0.45, ty + tile * 0.65, tile * 0.4, 2);
+        ctx.fillStyle = '#1f5a86'; ctx.fillRect(tx, ty, T, T);
+        ctx.fillStyle = '#3a83b8';
+        ctx.fillRect(tx + T * 0.12, ty + T * 0.3, T * 0.45, 2);
+        ctx.fillRect(tx + T * 0.45, ty + T * 0.6, T * 0.45, 2);
+      } else {
+        // grass base everywhere (under trees/mountains too)
+        ctx.fillStyle = '#3a6b3a'; ctx.fillRect(tx, ty, T, T);
+        ctx.fillStyle = '#447a44';
+        if ((x + y) % 2 === 0) ctx.fillRect(tx + T * 0.2, ty + T * 0.5, 3, 3);
+        ctx.fillStyle = '#2e5730';
+        if ((x * 2 + y) % 3 === 0) ctx.fillRect(tx + T * 0.6, ty + T * 0.25, 3, 3);
+        if (ch === 'T') {
+          ctx.fillStyle = '#5a3a1c'; ctx.fillRect(tx + T * 0.44, ty + T * 0.55, T * 0.12, T * 0.35);
+          ctx.fillStyle = '#1f5224'; ctx.beginPath(); ctx.arc(tx + T / 2, ty + T * 0.42, T * 0.3, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#2f7a36'; ctx.beginPath(); ctx.arc(tx + T * 0.42, ty + T * 0.36, T * 0.16, 0, Math.PI * 2); ctx.fill();
+        }
+        if (ch === '^') {
+          ctx.fillStyle = '#6c6c7e'; ctx.beginPath(); ctx.moveTo(tx + T / 2, ty + T * 0.12); ctx.lineTo(tx + T * 0.9, ty + T * 0.9); ctx.lineTo(tx + T * 0.1, ty + T * 0.9); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#4a4a5a'; ctx.beginPath(); ctx.moveTo(tx + T / 2, ty + T * 0.12); ctx.lineTo(tx + T * 0.5, ty + T * 0.9); ctx.lineTo(tx + T * 0.1, ty + T * 0.9); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = '#eef2f6'; ctx.beginPath(); ctx.moveTo(tx + T / 2, ty + T * 0.12); ctx.lineTo(tx + T * 0.64, ty + T * 0.4); ctx.lineTo(tx + T * 0.36, ty + T * 0.4); ctx.closePath(); ctx.fill();
+        }
       }
-      if (ch === 'T') { ctx.fillStyle = '#1b3a18'; ctx.beginPath(); ctx.arc(tx + tile / 2, ty + tile / 2, tile * 0.3, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#234d20'; ctx.fillRect(tx + tile * 0.45, ty + tile * 0.6, tile * 0.1, tile * 0.3); }
-      if (ch === '^') { ctx.fillStyle = '#7a7a8c'; ctx.beginPath(); ctx.moveTo(tx + tile / 2, ty + tile * 0.2); ctx.lineTo(tx + tile * 0.85, ty + tile * 0.85); ctx.lineTo(tx + tile * 0.15, ty + tile * 0.85); ctx.fill(); ctx.fillStyle = '#cfd2dc'; ctx.beginPath(); ctx.moveTo(tx + tile / 2, ty + tile * 0.2); ctx.lineTo(tx + tile * 0.62, ty + tile * 0.45); ctx.lineTo(tx + tile * 0.38, ty + tile * 0.45); ctx.fill(); }
     }
   }
-  // portals
+  // portals: towns as buildings, dungeons as cave mouths
   for (const [key, portal] of Object.entries(map.portals || {})) {
     const [px, py] = key.split(',').map(Number);
-    ctx.fillStyle = portal.toScreen === 'town' ? '#e7b53b' : '#4cc9f0';
-    ctx.fillRect(ox + px * tile + tile * 0.2, oy + py * tile + tile * 0.2, tile * 0.6, tile * 0.6);
-    ctx.fillStyle = '#120e1a';
-    ctx.font = `${Math.floor(tile * 0.5)}px serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText(portal.toScreen === 'town' ? '城' : '城', ox + px * tile + tile / 2, oy + py * tile + tile * 0.72);
+    const tx = ox + px * tile, ty = oy + py * tile, T = tile;
+    if (portal.toScreen === 'town') {
+      ctx.fillStyle = '#caa45a'; ctx.fillRect(tx + T * 0.2, ty + T * 0.45, T * 0.6, T * 0.4); // wall
+      ctx.fillStyle = '#9b2226'; ctx.beginPath(); ctx.moveTo(tx + T * 0.12, ty + T * 0.45); ctx.lineTo(tx + T / 2, ty + T * 0.18); ctx.lineTo(tx + T * 0.88, ty + T * 0.45); ctx.closePath(); ctx.fill(); // roof
+      ctx.fillStyle = '#3a2410'; ctx.fillRect(tx + T * 0.42, ty + T * 0.6, T * 0.16, T * 0.25); // door
+    } else {
+      ctx.fillStyle = '#3a3344'; ctx.fillRect(tx + T * 0.18, ty + T * 0.3, T * 0.64, T * 0.55);
+      ctx.fillStyle = '#0a0810'; ctx.beginPath(); ctx.arc(tx + T / 2, ty + T * 0.62, T * 0.26, Math.PI, 0); ctx.fill(); ctx.fillRect(tx + T * 0.24, ty + T * 0.62, T * 0.52, T * 0.24);
+    }
   }
   // encounters
   for (const key of Object.keys(map.encounters || {})) {
@@ -272,26 +289,28 @@ export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState) {
   ctx.lineTo(cxp - d.x * tile * 0.3 - d.y * tile * 0.25, cyp - d.y * tile * 0.3 - d.x * tile * 0.25);
   ctx.closePath(); ctx.fill();
   ctx.textAlign = 'start';
-  egaPost(ctx);
+  if (!vga) egaPost(ctx);
   viewFrame(ctx);
 }
 
-export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
-  // textured stone room: brick back wall + tiled floor + side walls
-  ctx.fillStyle = stone(40);
-  ctx.fillRect(0, 0, CW, CH);
-  const floorY = CH * 0.66;
-  brickFront(ctx, 0, 0, CW, floorY, 78);             // back wall
-  // perspective floor
-  ctx.fillStyle = stone(54);
-  ctx.fillRect(0, floorY, CW, CH - floorY);
-  ctx.strokeStyle = stone(28); ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let i = 1; i <= 5; i++) { const y = floorY + ((CH - floorY) * i) / 5; ctx.moveTo(0, y); ctx.lineTo(CW, y); }
-  for (const x of [0, CW * 0.2, CW * 0.4, CW * 0.6, CW * 0.8, CW]) { ctx.moveTo(x, CH); ctx.lineTo(CX, floorY); }
+export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = true) {
+  // textured stone chamber: brick back wall + side walls + tiled floor
+  const floorY = CH * 0.62;
+  brickPanel(ctx, 0, 0, CW, floorY, 0.6);                 // back wall
+  sideWall(ctx, 0, CW * 0.16, { t: 0, b: floorY }, { t: floorY * 0.18, b: floorY * 0.9 }, 0.5);          // left wall
+  sideWall(ctx, CW, CW * 0.84, { t: 0, b: floorY }, { t: floorY * 0.18, b: floorY * 0.9 }, 0.5);          // right wall
+  // floor: alternating perspective bands
+  for (let i = 0; i < 6; i++) {
+    const y0 = floorY + ((CH - floorY) * i) / 6;
+    const y1 = floorY + ((CH - floorY) * (i + 1)) / 6;
+    ctx.fillStyle = stoneC(0.3 + (i % 2) * 0.08 + i * 0.02);
+    ctx.fillRect(0, y0, CW, y1 - y0);
+  }
+  ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1; ctx.beginPath();
+  for (const x of [CW * 0.1, CW * 0.3, CW * 0.7, CW * 0.9]) { ctx.moveTo(x, CH); ctx.lineTo(CX, floorY); }
   ctx.stroke();
   const c = g.combat;
-  if (!c) { egaPost(ctx); viewFrame(ctx); return; }
+  if (!c) { if (!vga) egaPost(ctx); viewFrame(ctx); return; }
   const n = c.monsters.length;
   c.monsters.forEach((m, i) => {
     const def = monsterMap[m.defId];
@@ -307,9 +326,17 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
     const sprite = MONSTER_SPRITES[m.defId];
     const size = def.boss ? 60 : 26;
     if (sprite) {
-      // EGA pixel sprite, baseline anchored just below the row centre
-      const px = def.boss ? 7 : 4;
-      const baseY = my + (def.boss ? 64 : 40);
+      const px = def.boss ? 11 : 7;
+      const baseY = my + (def.boss ? 70 : 46);
+      // ground shadow
+      ctx.save();
+      ctx.globalAlpha = (dead ? 0.1 : 0.35);
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.ellipse(mx, baseY, (sprite[0].length * px) * 0.4, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.globalAlpha = dead ? 0.2 : 1;
       drawSprite(ctx, sprite, mx, baseY, px);
     } else {
       // fallback blob for any monster without a sprite yet
@@ -342,7 +369,7 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
   ctx.fillStyle = '#4cc9f0';
   ctx.font = '13px monospace';
   ctx.fillText(`ROUND ${c.round}`, 12, 22);
-  egaPost(ctx);
+  if (!vga) egaPost(ctx);
   viewFrame(ctx);
 }
 
