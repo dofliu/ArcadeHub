@@ -252,9 +252,9 @@ export const App: React.FC = () => {
         {g.screen === 'train' && <TrainScreen g={g} apply={apply} active={sheetActive} setActive={setSheetActive} />}
         {g.screen === 'combat' && <CombatPanel g={g} apply={apply} />}
 
-        {/* Explore movement controls */}
+        {/* Explore movement controls (touch screens; desktop uses arrow keys) */}
         {isExplore && (
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 md:hidden">
             {g.screen === 'dungeon' ? (
               <div className="grid grid-cols-3 gap-2">
                 <span />
@@ -277,6 +277,11 @@ export const App: React.FC = () => {
             <div className="text-xs text-mm-light/40 max-w-[120px]">
               {g.screen === 'dungeon' ? '↑前進 ↓後退 ←→轉向' : '方向鍵移動'}
             </div>
+          </div>
+        )}
+        {isExplore && (
+          <div className="hidden md:block text-[11px] text-mm-light/40">
+            鍵盤：{g.screen === 'dungeon' ? '↑前進 ↓後退 ←→轉向' : '方向鍵移動'}
           </div>
         )}
 

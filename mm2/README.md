@@ -64,6 +64,14 @@ A complete playthrough loop exercising every major system:
 - **Two new quests** across Atlantium (Crown of the Deep, the Ancient Scroll) that grant gear
   and teach a spell.
 
+### Quality-of-life
+
+- **Combat keyboard shortcuts** — `A` attack, `D` defend, `S` spells, `I` items, `R` run, and
+  number keys to pick a target/spell/item (`Esc` cancels). Targets/spells/items are numbered, and a
+  shortcut hint shows in the action panel — fully playable without the mouse.
+- The on-screen movement pad is hidden on desktop (arrow keys handle movement) so the message log
+  has room; it still appears on touch screens.
+
 ### Milestone 10 — animation & theming
 
 - **Flickering torches** — flames and glow pulse over time via an ambient redraw loop that runs in
