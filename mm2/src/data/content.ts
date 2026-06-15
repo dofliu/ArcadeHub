@@ -127,6 +127,9 @@ export const ITEMS: ItemDef[] = [
   { id: 'storm_blade', name: '雷霆之刃', nameEn: 'Storm Blade', type: 'weapon', slot: 'weapon', dmg: [5, 12], atkBonus: 3, value: 520, desc: '附帶雷電的鋒利長劍。' },
   { id: 'mithril_plate', name: '秘銀板甲', nameEn: 'Mithril Plate', type: 'armor', slot: 'armor', acBonus: 12, value: 720, desc: '輕盈而堅固的秘銀全身甲。' },
   { id: 'sky_shard', name: '天空碎片', nameEn: 'Sky Shard', type: 'quest', value: 0, desc: '天空神殿核心的結晶碎片，天文學家亟欲研究。' },
+  { id: 'inferno_axe', name: '煉獄巨斧', nameEn: 'Inferno Axe', type: 'weapon', slot: 'weapon', dmg: [7, 15], atkBonus: 4, value: 760, twoHanded: true, desc: '燃燒著地火的雙手巨斧。' },
+  { id: 'forge_key', name: '熔爐之鑰', nameEn: 'Forge Key', type: 'quest', value: 0, desc: '開啟火山深淵封印的灼熱之鑰。' },
+  { id: 'ember_heart', name: '餘燼之心', nameEn: 'Ember Heart', type: 'quest', value: 0, desc: '熔岩領主胸中跳動的火核，鍛造大師夢寐以求。' },
 ];
 
 export const MONSTERS: MonsterDef[] = [
@@ -158,6 +161,11 @@ export const MONSTERS: MonsterDef[] = [
   { id: 'stone_golem', name: '石巨人', nameEn: 'Stone Golem', hp: 80, ac: 11, attack: 7, dmg: [6, 14], speed: 5, xp: 230, gold: [20, 50], resist: { fire: 30, cold: 30, shock: 30, poison: 100 }, color: '#8a8d91', desc: '緩慢但堅不可摧的魔像守衛。' },
   { id: 'storm_elemental', name: '風暴元素', nameEn: 'Storm Elemental', hp: 44, ac: 7, attack: 6, dmg: [4, 10], speed: 15, xp: 165, gold: [20, 45], spellId: 'lightning', resist: { shock: 80 }, color: '#48cae4', desc: '凝聚雷電的元素生命。' },
   { id: 'storm_djinn', name: '雷霆精靈王', nameEn: 'Storm Djinn', hp: 260, ac: 11, attack: 11, dmg: [8, 18], speed: 17, xp: 1200, gold: [400, 700], spellId: 'lightning', resist: { shock: 80, fire: 20 }, inflicts: { paralyze: 0.25 }, boss: true, color: '#0096c7', desc: '盤踞天空神殿、操縱雷霆的精靈之王。' },
+  // ---- Milestone 12 — Volcanic Depths ----
+  { id: 'fire_imp', name: '火焰小鬼', nameEn: 'Fire Imp', hp: 22, ac: 6, attack: 5, dmg: [3, 8], speed: 16, xp: 70, gold: [10, 24], resist: { fire: 80 }, inflicts: { poison: 0.2 }, color: '#ff7b1a', desc: '在熔岩間跳躍的火精。' },
+  { id: 'lava_hound', name: '熔岩獵犬', nameEn: 'Lava Hound', hp: 52, ac: 8, attack: 7, dmg: [6, 12], speed: 15, xp: 180, gold: [25, 50], resist: { fire: 90 }, color: '#e85d04', desc: '渾身岩漿的兇猛獵犬。' },
+  { id: 'magma_golem', name: '熔岩魔像', nameEn: 'Magma Golem', hp: 90, ac: 11, attack: 8, dmg: [7, 15], speed: 5, xp: 250, gold: [30, 60], resist: { fire: 90, poison: 100 }, color: '#9a3412', desc: '由熔岩與岩石凝成的巨像。' },
+  { id: 'magma_lord', name: '熔岩領主', nameEn: 'Magma Lord', hp: 300, ac: 12, attack: 12, dmg: [9, 20], speed: 13, xp: 1500, gold: [550, 850], spellId: 'meteor', resist: { fire: 95, shock: 20 }, inflicts: { paralyze: 0.2 }, boss: true, color: '#d00000', desc: '統御火山深淵的烈焰之主。' },
 ];
 
 // ---------- Maps ----------
@@ -193,6 +201,7 @@ export const MAPS: TileMap[] = [
       '9,11': { toMap: 'sky_temple1', to: { x: 1, y: 1, dir: 1 }, label: '天空神殿' },
       '2,7': { toMap: 'overworld', to: { x: 2, y: 7 }, toScreen: 'town', town: 'murkmire', label: '沼澤鎮 Murkmire' },
       '16,4': { toMap: 'overworld', to: { x: 16, y: 4 }, toScreen: 'town', town: 'cliffport', label: '崖港 Cliffport' },
+      '7,11': { toMap: 'volcano1', to: { x: 1, y: 1, dir: 1 }, label: '火山深淵' },
     },
     encounters: {
       '6,10': { monsters: [{ id: 'goblin', count: [1, 2] }, { id: 'kobold', count: [1, 2] }] },
@@ -382,6 +391,82 @@ export const MAPS: TileMap[] = [
     },
     portals: {
       '1,1': { toMap: 'overworld', to: { x: 9, y: 10, dir: 0 }, label: '回到地表' },
+    },
+  },
+  {
+    id: 'volcano1',
+    name: '火山深淵 · 熔爐',
+    nameEn: 'Volcanic Depths · Forge',
+    kind: 'dungeon',
+    level: 1,
+    grid: [
+      '############',
+      '#S......#D.#',
+      '#.........##',
+      '#..........#',
+      '#..........#',
+      '#....##....#',
+      '#....##....#',
+      '#..........#',
+      '#..........#',
+      '#..........#',
+      '############',
+    ],
+    start: { x: 1, y: 1, dir: 1 },
+    doors: {
+      '9,1': { locked: true, keyItem: 'forge_key', text: '一道被熔岩封住的灼熱之門。' },
+    },
+    chests: {
+      '10,9': { items: ['forge_key'], gold: [60, 110] },
+      '1,9': { gold: [80, 140], items: ['greater_healing'], trapped: true },
+      '10,3': { gold: [40, 80], items: ['mithril_plate'] },
+    },
+    encounters: {
+      '3,5': { monsters: [{ id: 'fire_imp', count: [2, 3] }, { id: 'lava_hound', count: [1, 1] }] },
+      '8,7': { monsters: [{ id: 'magma_golem', count: [1, 1] }] },
+      '5,8': { monsters: [{ id: 'lava_hound', count: [1, 2] }, { id: 'fire_imp', count: [1, 2] }] },
+    },
+    traps: {
+      '4,4': { damage: [12, 22], text: '🪤 地縫噴出岩漿！' },
+      '7,8': { damage: [12, 22], text: '🪤 落石伴著火星砸落！' },
+    },
+    portals: {
+      '10,1': { toMap: 'volcano2', to: { x: 1, y: 1, dir: 1 }, label: '通往熔心的階梯' },
+      '1,1': { toMap: 'overworld', to: { x: 7, y: 10, dir: 0 }, label: '回到地表' },
+    },
+  },
+  {
+    id: 'volcano2',
+    name: '火山深淵 · 熔心',
+    nameEn: 'Volcanic Depths · Core',
+    kind: 'dungeon',
+    level: 2,
+    grid: [
+      '############',
+      '#..........#',
+      '#..####....#',
+      '#..........#',
+      '#....##....#',
+      '#....##....#',
+      '#..........#',
+      '#..........#',
+      '############',
+    ],
+    start: { x: 1, y: 1, dir: 1 },
+    chests: {
+      '1,6': { gold: [120, 200], items: ['inferno_axe'] },
+      '10,1': { gold: [80, 150], items: ['ring_might'] },
+    },
+    traps: {
+      '5,6': { damage: [14, 26], text: '🪤 熔岩湧泉爆發！' },
+    },
+    encounters: {
+      '5,3': { monsters: [{ id: 'magma_golem', count: [1, 1] }, { id: 'fire_imp', count: [1, 2] }] },
+      '8,5': { monsters: [{ id: 'lava_hound', count: [2, 2] }] },
+      '10,7': { monsters: [{ id: 'magma_lord', count: [1, 1] }], once: true, boss: true, bossItem: 'ember_heart', bossFlag: 'magma_dead' },
+    },
+    portals: {
+      '1,1': { toMap: 'volcano1', to: { x: 10, y: 1, dir: 3 }, label: '向上的階梯' },
     },
   },
 ];
@@ -803,6 +888,35 @@ export const NPCS: NPCDef[] = [
       done: { id: 'done', text: '「航道恢復繁忙了，謝謝你，英雄。」', options: [{ label: '離開', action: { end: true } }] },
     },
   },
+  {
+    id: 'forge_master',
+    name: '鍛造大師 索恩',
+    nameEn: 'Forgemaster Thorin',
+    root: 'start',
+    entries: [
+      { cond: { questComplete: 'volcano_quest' }, node: 'done' },
+      { cond: { questActive: 'volcano_quest', item: 'ember_heart' }, node: 'reward' },
+      { cond: { questActive: 'volcano_quest' }, node: 'reminder' },
+    ],
+    nodes: {
+      start: {
+        id: 'start',
+        text: '「火山深淵的熔岩領主胸中有顆『餘燼之心』—— 千年難遇的鍛造火核。替我取回，我為你鍛一件神兵，外加重酬！」',
+        options: [
+          { label: '我去取餘燼之心', to: 'accept', action: { giveQuest: 'volcano_quest' } },
+          { label: '太危險了', action: { end: true } },
+        ],
+      },
+      accept: { id: 'accept', text: '「入口在城外南方。一層有道熔岩封門，需要『熔爐之鑰』。小心熔岩領主的隕石！」', options: [{ label: '了解', action: { end: true } }] },
+      reminder: { id: 'reminder', text: '「餘燼之心還在熔岩領主胸中呢。熔爐之鑰在火山一層。」', options: [{ label: '這就去', action: { end: true } }] },
+      reward: {
+        id: 'reward',
+        text: '「這…這就是餘燼之心！絕世火核！收下這把煉獄巨斧與賞金吧，英雄！」',
+        options: [{ label: '領取獎賞', action: { completeQuest: 'volcano_quest', giveItem: 'inferno_axe', end: true } }],
+      },
+      done: { id: 'done', text: '「有了餘燼之心，我的鍛爐能燒出傳說中的兵器了。多謝你，英雄。」', options: [{ label: '離開', action: { end: true } }] },
+    },
+  },
 ];
 
 export const QUESTS: QuestDef[] = [
@@ -817,6 +931,7 @@ export const QUESTS: QuestDef[] = [
   { id: 'sky_quest', name: '天空碎片', nameEn: 'The Sky Shard', giver: 'astronomer', itemRequired: 'sky_shard', desc: '從天空神殿的雷霆精靈王手中取回天空碎片。', hint: '天空神殿入口在戶外地圖南方。', rewardGold: 450, rewardXp: 380 },
   { id: 'bounty_ghoul', name: '懸賞：沼澤食屍鬼', nameEn: 'Bounty: Marsh Ghouls', giver: 'murkmire_hunter', clearCell: 'overworld:4,6', desc: '清除沼澤西邊的食屍鬼群。', hint: '食屍鬼在戶外地圖西側。', rewardGold: 240, rewardXp: 190 },
   { id: 'bounty_gargoyle', name: '懸賞：崖頂石像鬼', nameEn: 'Bounty: Cliff Gargoyle', giver: 'cliffport_captain', clearCell: 'overworld:12,7', desc: '擊殺盤踞崖頂的石像鬼。', hint: '石像鬼在戶外地圖中央偏東。', rewardGold: 320, rewardXp: 260 },
+  { id: 'volcano_quest', name: '餘燼之心', nameEn: 'The Ember Heart', giver: 'forge_master', itemRequired: 'ember_heart', desc: '從火山深淵的熔岩領主手中取回餘燼之心。', hint: '需要熔爐之鑰（火山一層），擊敗熔岩領主。', rewardGold: 700, rewardXp: 600 },
 ];
 
 // ---------- Shops ----------
@@ -858,7 +973,7 @@ export const TOWNS: TownDef[] = [
     id: 'vulcania', name: '火山城 Vulcania', nameEn: 'Vulcania',
     desc: '建於火山口的鍛造之城，盛產利刃與烈焰法術。',
     shops: ['master_smith', 'arcane_emporium'],
-    npcs: ['vulcania_smith', 'townsfolk'],
+    npcs: ['vulcania_smith', 'forge_master', 'townsfolk'],
   },
   {
     id: 'murkmire', name: '沼澤鎮 Murkmire', nameEn: 'Murkmire',

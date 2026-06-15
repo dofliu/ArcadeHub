@@ -83,10 +83,12 @@ const THEMES: Record<string, { r: number; g: number; b: number }> = {
   warm: { r: 1, g: 1, b: 1 },                 // Middlegate dungeon — tan/brown
   cold: { r: 0.66, g: 0.92, b: 1.7 },          // Sunken caverns — blue/teal
   sky: { r: 0.82, g: 0.96, b: 1.5 },           // Sky temple — pale cold blue
+  volcano: { r: 1.5, g: 0.62, b: 0.5 },        // Volcanic depths — dark red
 };
 function themeKeyFor(mapId: string): string {
   if (mapId.startsWith('caverns')) return 'cold';
   if (mapId.startsWith('sky')) return 'sky';
+  if (mapId.startsWith('volcano')) return 'volcano';
   return 'warm';
 }
 function applyTheme(mapId: string) { THEME_KEY = themeKeyFor(mapId); THEME = THEMES[THEME_KEY]; }
@@ -227,7 +229,7 @@ function lightOrb(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
 function themeLight(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
   if (THEME_KEY === 'cold') crystal(ctx, x, y, s);
   else if (THEME_KEY === 'sky') lightOrb(ctx, x, y, s);
-  else torch(ctx, x, y, s);
+  else torch(ctx, x, y, s); // warm + volcano use fire
 }
 
 // Per-theme ambient overlay (drips/mist/sparkles) for atmosphere.
@@ -254,6 +256,18 @@ function atmosphere(ctx: CanvasRenderingContext2D) {
       const y = (i * 53 + Math.sin(t / 500 + i) * 8) % (CH * 0.6) + 10;
       ctx.fillRect(x, y, 2, 2);
     }
+  } else if (THEME_KEY === 'volcano') {
+    ctx.fillStyle = 'rgba(170,40,10,0.12)'; ctx.fillRect(0, 0, CW, CH); // red wash
+    // rising embers
+    for (let i = 0; i < 22; i++) {
+      const x = (i * 71 + Math.sin(t / 400 + i) * 10) % CW;
+      const y = CH - ((i * 67 + t / 8) % CH);
+      const a = 0.5 + 0.4 * Math.sin(t / 200 + i);
+      ctx.fillStyle = `rgba(255,${120 + (i % 4) * 25},40,${a})`;
+      ctx.fillRect(x, y, 2, 3);
+    }
+    // lava sheen on the floor
+    ctx.fillStyle = 'rgba(255,90,20,0.08)'; ctx.fillRect(0, CH * 0.72, CW, CH * 0.28);
   }
 }
 

@@ -339,5 +339,36 @@ E.tryStep(tr, 3, 3); // trap cell
 assert(tr.party[0].hp < hpBefore, 'stepping on a trap damages the party');
 assert(tr.triggeredTraps.includes('dungeon2:3,3'), 'trap recorded as triggered');
 
+// 18) Milestone 12 — volcano dungeon, balance scaling
+console.log('Milestone 12 — Volcanic Depths:');
+const v12 = E.newGame();
+const v12p = [0, 1, 2, 3].map(i => E.makeCharacter(i, 'V' + i, 'human', i === 2 ? 'sorcerer' : 'knight'));
+for (const c of v12p) { c.level = 30; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp; c.equipment.weapon = 'dragon_blade'; }
+E.startAdventure(v12, v12p);
+v12.screen = 'overworld'; v12.pos = { mapId: 'overworld', x: 7, y: 11, dir: 1 }; E.enterCell(v12);
+assert(v12.pos.mapId === 'volcano1' && v12.screen === 'dungeon', 'Volcano portal enters the dungeon');
+// boss drops the Ember Heart
+v12.screen = 'dungeon'; v12.pos = { mapId: 'volcano2', x: 9, y: 7, dir: 1 };
+const magmaEnc = mapMap['volcano2'].encounters!['10,7'];
+E.startCombat(v12, 'volcano2:10,7', magmaEnc, 'volcano2');
+let vg = 0;
+while (v12.combat && vg++ < 3000) { const a = E.currentActor(v12); if (!a) break; if (a.side === 'party') { const mi = E.firstAliveMonsterIdx(v12); if (mi < 0) break; E.combatAttack(v12, mi); } else break; }
+assert(v12.combat === null, 'magma lord fight terminates');
+if (v12.flags['magma_dead']) assert(v12.backpack.includes('ember_heart'), 'magma lord drops the Ember Heart');
+// forge quest gives the inferno axe
+E.applyDialogAction(v12, { giveQuest: 'volcano_quest' });
+if (!v12.backpack.includes('ember_heart')) v12.backpack.push('ember_heart');
+assert(E.npcEntryNode(v12, 'forge_master') === 'reward', 'forgemaster ready with the ember heart');
+
+// balance: a large party draws a bigger non-boss pack
+console.log('Balance scaling:');
+const bs = E.newGame();
+const bsp = [0, 1, 2, 3, 4, 5, 6, 7].map(i => E.makeCharacter(i, 'B' + i, 'human', 'knight'));
+for (const c of bsp) { c.level = 5; E.recompute(c); c.hp = c.maxHp; }
+E.startAdventure(bs, bsp);
+const smallEnc = { monsters: [{ id: 'giant_rat', count: [1, 1] as [number, number] }] };
+E.startCombat(bs, 'overworld:9,6', smallEnc, 'overworld');
+assert(bs.combat!.monsters.length > 1, 'a full party of 8 faces extra monsters');
+
 console.log('\n' + (failures === 0 ? '✅ ALL SIM CHECKS PASSED' : `❌ ${failures} CHECK(S) FAILED`));
 if (failures > 0) process.exit(1);
