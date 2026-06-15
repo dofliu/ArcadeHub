@@ -8,7 +8,7 @@ import {
 import { Btn, Panel, Bar, PartyBar, charLabel } from './common';
 import {
   Swords, Shield, Sparkles, Wand2, FlaskConical, Footprints, Coins, Store, Cross, BedDouble,
-  Beer, ScrollText, Backpack, ArrowLeft, Dices, Users, CheckCircle2, CircleAlert, Circle, UserPlus, Dumbbell,
+  Beer, ScrollText, Backpack, ArrowLeft, Dices, Users, CheckCircle2, CircleAlert, Circle, UserPlus, Dumbbell, Save,
 } from 'lucide-react';
 
 type Apply = (fn: (d: GameState) => void) => void;
@@ -226,6 +226,45 @@ export const TrainScreen: React.FC<{ g: GameState; apply: Apply; active: number;
       </Panel>
       <div className="mt-3">
         <Btn onClick={() => apply(d => { d.screen = 'town'; })}><ArrowLeft size={14} className="inline mr-1" />離開</Btn>
+      </div>
+    </div>
+  );
+};
+
+// ============ Save / load slots ============
+export const SavesScreen: React.FC<{ g: GameState; apply: Apply; replace: (s: GameState) => void }> = ({ g, apply, replace }) => {
+  const [, setRefresh] = useState(0);
+  const bump = () => setRefresh(n => n + 1);
+  const fmt = (ts: number) => { try { return new Date(ts).toLocaleString(); } catch { return ''; } };
+  return (
+    <div className="w-full max-w-xl">
+      <div className="flex items-center mb-3">
+        <Save className="text-mm-gold mr-2" />
+        <h2 className="font-rune text-xl text-mm-gold">存讀檔</h2>
+        <Btn className="ml-auto" onClick={() => apply(d => { d.screen = d.party.length ? 'town' : 'title'; })}>
+          <ArrowLeft size={14} className="inline mr-1" />返回
+        </Btn>
+      </div>
+      <div className="space-y-2">
+        {E.SAVE_SLOTS.map(slot => {
+          const meta = E.saveMeta(slot);
+          const label = slot === 'auto' ? '自動存檔' : `欄位 ${slot}`;
+          return (
+            <Panel key={slot} className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <div className="text-mm-light font-bold text-sm">{label}</div>
+                {meta ? (
+                  <div className="text-mm-light/60 text-[11px]">
+                    {meta.leadName} Lv{meta.leadLevel} · 第{meta.day}天 · {meta.gold}金 · {fmt(meta.ts)}
+                  </div>
+                ) : <div className="text-mm-light/30 text-[11px]">（空）</div>}
+              </div>
+              <Btn variant="gold" onClick={() => { apply(d => E.saveGame(d, slot)); bump(); }}>存檔</Btn>
+              <Btn variant="primary" disabled={!meta} onClick={() => { const s = E.loadGame(slot); if (s) replace(s); }}>讀取</Btn>
+              <Btn variant="danger" disabled={!meta} onClick={() => { E.clearSave(slot); bump(); }}>刪除</Btn>
+            </Panel>
+          );
+        })}
       </div>
     </div>
   );

@@ -729,6 +729,7 @@ function monsterAct(g: GameState, mIdx: number) {
   const targets = g.party.map((p, i) => ({ p, i })).filter(t => t.p.condition === 'ok' && t.p.hp > 0);
   if (targets.length === 0) return;
   const target = targets[rnd(targets.length)];
+  playFx(g, 'lunge', 'monster', mIdx);
   // cast?
   if (def.spellId && Math.random() < 0.4) {
     const sp = spellMap[def.spellId];
@@ -936,21 +937,64 @@ export function learnSpell(g: GameState, charIdx: number, spellId: string): bool
   return true;
 }
 
-// ---------- save / load ----------
-const SAVE_KEY = 'mm2_save_v1';
-export function saveGame(g: GameState) {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(g)); toast(g, '已存檔'); } catch { /* ignore */ }
+// ---------- save / load (multi-slot) ----------
+export type SaveSlot = 'auto' | '1' | '2' | '3';
+export const SAVE_SLOTS: SaveSlot[] = ['auto', '1', '2', '3'];
+export interface SaveMeta { day: number; gold: number; leadName: string; leadLevel: number; town: string; ts: number; }
+interface SaveRecord { meta: SaveMeta; state: GameState; }
+const slotKey = (slot: SaveSlot) => `mm2_save_${slot}`;
+
+function makeMeta(g: GameState): SaveMeta {
+  const lead = g.party[0];
+  return { day: g.day, gold: g.gold, leadName: lead?.name || '—', leadLevel: lead?.level || 0, town: g.townId, ts: Date.now() };
 }
-export function loadGame(): GameState | null {
+
+export function saveGame(g: GameState, slot: SaveSlot = 'auto') {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const rec: SaveRecord = { meta: makeMeta(g), state: g };
+    localStorage.setItem(slotKey(slot), JSON.stringify(rec));
+    toast(g, slot === 'auto' ? '已自動存檔' : `已存檔到欄位 ${slot}`);
+  } catch { /* ignore */ }
+}
+export function loadGame(slot: SaveSlot = 'auto'): GameState | null {
+  try {
+    const raw = localStorage.getItem(slotKey(slot));
     if (!raw) return null;
-    return JSON.parse(raw) as GameState;
+    const parsed = JSON.parse(raw);
+    // support both the new record shape and any legacy bare-state saves
+    const state = (parsed && parsed.state) ? parsed.state : parsed;
+    return state as GameState;
   } catch { return null; }
 }
-export function hasSave(): boolean {
-  try { return !!localStorage.getItem(SAVE_KEY); } catch { return false; }
+export function saveMeta(slot: SaveSlot): SaveMeta | null {
+  try {
+    const raw = localStorage.getItem(slotKey(slot));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return (parsed && parsed.meta) ? parsed.meta as SaveMeta : null;
+  } catch { return null; }
 }
-export function clearSave() {
-  try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+export function hasSave(slot: SaveSlot = 'auto'): boolean {
+  try { return !!localStorage.getItem(slotKey(slot)); } catch { return false; }
+}
+export function hasAnySave(): boolean { return SAVE_SLOTS.some(s => hasSave(s)); }
+export function latestSlot(): SaveSlot | null {
+  let best: SaveSlot | null = null, bestTs = -1;
+  for (const s of SAVE_SLOTS) { const m = saveMeta(s); if (m && m.ts > bestTs) { bestTs = m.ts; best = s; } }
+  return best;
+}
+export function clearSave(slot?: SaveSlot) {
+  try {
+    if (slot) localStorage.removeItem(slotKey(slot));
+    else SAVE_SLOTS.forEach(s => localStorage.removeItem(slotKey(s)));
+  } catch { /* ignore */ }
+}
+
+// ---------- settings memory ----------
+export interface Settings { vga: boolean; sound: boolean; }
+export function loadSettings(): Settings | null {
+  try { const raw = localStorage.getItem('mm2_settings'); return raw ? JSON.parse(raw) as Settings : null; } catch { return null; }
+}
+export function saveSettings(s: Settings) {
+  try { localStorage.setItem('mm2_settings', JSON.stringify(s)); } catch { /* ignore */ }
 }

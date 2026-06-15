@@ -78,16 +78,19 @@ function lerp(a: number, b: number, t: number) { return a + (b - a) * t; }
 
 // Per-dungeon stone tint so each location reads differently.
 let THEME = { r: 1, g: 1, b: 1 };
+let THEME_KEY = 'warm';
 const THEMES: Record<string, { r: number; g: number; b: number }> = {
   warm: { r: 1, g: 1, b: 1 },                 // Middlegate dungeon — tan/brown
   cold: { r: 0.66, g: 0.92, b: 1.7 },          // Sunken caverns — blue/teal
   sky: { r: 0.82, g: 0.96, b: 1.5 },           // Sky temple — pale cold blue
 };
-function themeFor(mapId: string): { r: number; g: number; b: number } {
-  if (mapId.startsWith('caverns')) return THEMES.cold;
-  if (mapId.startsWith('sky')) return THEMES.sky;
-  return THEMES.warm;
+function themeKeyFor(mapId: string): string {
+  if (mapId.startsWith('caverns')) return 'cold';
+  if (mapId.startsWith('sky')) return 'sky';
+  return 'warm';
 }
+function applyTheme(mapId: string) { THEME_KEY = themeKeyFor(mapId); THEME = THEMES[THEME_KEY]; }
+function themeFor(mapId: string): { r: number; g: number; b: number } { return THEMES[themeKeyFor(mapId)]; }
 
 // Warm stone colour at brightness level 0..1, tinted by the current theme.
 function stoneC(level: number) {
@@ -187,6 +190,73 @@ function torch(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
   ctx.fillStyle = '#fff3c4'; ctx.beginPath(); ctx.ellipse(x, y - 4 * s, 1.4 * s, fh * 0.38, 0, 0, Math.PI * 2); ctx.fill();
 }
 
+// A cyan glowing crystal sconce (caverns).
+function crystal(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
+  const t = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const pulse = 0.78 + 0.22 * Math.sin(t / 220 + x);
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const gr = ctx.createRadialGradient(x, y, 2, x, y, 56 * s * pulse);
+  gr.addColorStop(0, `rgba(90,220,255,${0.45 * pulse})`);
+  gr.addColorStop(0.5, 'rgba(40,150,220,0.14)');
+  gr.addColorStop(1, 'rgba(20,90,160,0)');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, 56 * s * pulse, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#9be7ff'; ctx.beginPath();
+  ctx.moveTo(x, y - 9 * s); ctx.lineTo(x + 4 * s, y); ctx.lineTo(x, y + 9 * s); ctx.lineTo(x - 4 * s, y); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#e6fbff'; ctx.beginPath();
+  ctx.moveTo(x, y - 9 * s); ctx.lineTo(x + 2 * s, y); ctx.lineTo(x, y + 3 * s); ctx.lineTo(x - 2 * s, y); ctx.closePath(); ctx.fill();
+}
+
+// A soft pale light orb (sky temple).
+function lightOrb(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
+  const t = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  const drift = Math.sin(t / 700 + x) * 3 * s;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const gr = ctx.createRadialGradient(x, y + drift, 1, x, y + drift, 50 * s);
+  gr.addColorStop(0, 'rgba(220,235,255,0.5)');
+  gr.addColorStop(0.5, 'rgba(160,190,240,0.14)');
+  gr.addColorStop(1, 'rgba(120,150,220,0)');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y + drift, 50 * s, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#eef4ff'; ctx.beginPath(); ctx.arc(x, y + drift, 4 * s, 0, Math.PI * 2); ctx.fill();
+}
+
+// Theme light source on a side wall.
+function themeLight(ctx: CanvasRenderingContext2D, x: number, y: number, s = 1) {
+  if (THEME_KEY === 'cold') crystal(ctx, x, y, s);
+  else if (THEME_KEY === 'sky') lightOrb(ctx, x, y, s);
+  else torch(ctx, x, y, s);
+}
+
+// Per-theme ambient overlay (drips/mist/sparkles) for atmosphere.
+function atmosphere(ctx: CanvasRenderingContext2D) {
+  const t = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  if (THEME_KEY === 'cold') {
+    ctx.fillStyle = 'rgba(40,110,170,0.12)'; ctx.fillRect(0, 0, CW, CH); // bluish wash
+    // slow water drips down the side walls
+    ctx.strokeStyle = 'rgba(150,220,255,0.35)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 5; i++) {
+      const x = 30 + i * 18; const yy = (t / 6 + i * 90) % CH;
+      ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x, yy + 8); ctx.stroke();
+      const x2 = CW - 30 - i * 18; const yy2 = (t / 6 + i * 130) % CH;
+      ctx.beginPath(); ctx.moveTo(x2, yy2); ctx.lineTo(x2, yy2 + 8); ctx.stroke();
+    }
+    // floor sheen
+    ctx.fillStyle = 'rgba(120,200,255,0.06)'; ctx.fillRect(0, CH * 0.7, CW, CH * 0.3);
+  } else if (THEME_KEY === 'sky') {
+    ctx.fillStyle = 'rgba(200,220,255,0.10)'; ctx.fillRect(0, 0, CW, CH); // bright wash
+    // drifting sparkles
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    for (let i = 0; i < 18; i++) {
+      const x = (i * 97 + t / 20) % CW;
+      const y = (i * 53 + Math.sin(t / 500 + i) * 8) % (CH * 0.6) + 10;
+      ctx.fillRect(x, y, 2, 2);
+    }
+  }
+}
+
 // Draw a monster sprite with a 1px dark outline for a cleaner, designed look.
 function outlinedSprite(ctx: CanvasRenderingContext2D, rows: string[], cx: number, baseY: number, px: number) {
   const o = '#0a0810';
@@ -200,7 +270,7 @@ function outlinedSprite(ctx: CanvasRenderingContext2D, rows: string[], cx: numbe
 export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState, vga = true) {
   const map = mapMap[g.pos.mapId];
   const grid = map.grid;
-  THEME = themeFor(map.id);
+  applyTheme(map.id);
   const lit = !!g.flags['light'];
   const amb = lit ? 0.95 : 0.6; // ambient brightness
 
@@ -260,11 +330,12 @@ export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState, vga = t
     else if (map.encounters?.[fkey] && !g.clearedEncounters.includes(gkey)) marker(ctx, far, '#9b2226');
     cx = fx; cy = fy;
   }
-  // wall torches on the nearest solid side walls
+  // theme light sources on the nearest solid side walls
   const nearL = isSolid(grid, g.pos.x + left.x, g.pos.y + left.y);
   const nearR = isSolid(grid, g.pos.x + right.x, g.pos.y + right.y);
-  if (lit || nearL) { if (nearL) torch(ctx, CW * 0.05, CH * 0.42, 1); }
-  if (lit || nearR) { if (nearR) torch(ctx, CW * 0.95, CH * 0.42, 1); }
+  if (nearL) themeLight(ctx, CW * 0.05, CH * 0.42, 1);
+  if (nearR) themeLight(ctx, CW * 0.95, CH * 0.42, 1);
+  atmosphere(ctx);
   vignette(ctx, lit ? 0.32 : 0.55);
   if (!vga) egaPost(ctx);
   viewFrame(ctx);
@@ -362,7 +433,7 @@ export function drawOverworld(ctx: CanvasRenderingContext2D, g: GameState, vga =
 }
 
 export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = true, fx: ActiveFx[] = []) {
-  THEME = themeFor(g.pos.mapId);
+  applyTheme(g.pos.mapId);
   // textured stone chamber: brick back wall + side walls + tiled floor
   const floorY = CH * 0.62;
   brickPanel(ctx, 0, 0, CW, floorY, 0.6);                 // back wall
@@ -378,8 +449,8 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = tr
   ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1; ctx.beginPath();
   for (const x of [CW * 0.1, CW * 0.3, CW * 0.7, CW * 0.9]) { ctx.moveTo(x, CH); ctx.lineTo(CX, floorY); }
   ctx.stroke();
-  torch(ctx, CW * 0.11, floorY * 0.42, 1.1);
-  torch(ctx, CW * 0.89, floorY * 0.42, 1.1);
+  themeLight(ctx, CW * 0.11, floorY * 0.42, 1.1);
+  themeLight(ctx, CW * 0.89, floorY * 0.42, 1.1);
   const c = g.combat;
   if (!c) { vignette(ctx, 0.45); if (!vga) egaPost(ctx); viewFrame(ctx); return; }
   const n = c.monsters.length;
@@ -400,10 +471,14 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = tr
     const hitFx = fx.find(e => e.side === 'monster' && e.idx === i && (e.kind === 'hit' || e.kind === 'crit' || e.kind === 'spell'));
     const react = hitFx ? Math.max(0, 1 - hitFx.age) : 0;
     const jitter = react > 0 ? Math.round(Math.sin(hitFx!.age * 30) * 3 * react) : 0;
+    // lunge forward when this monster acts
+    const lungeFx = fx.find(e => e.side === 'monster' && e.idx === i && e.kind === 'lunge');
+    const lunge = lungeFx ? Math.sin(Math.min(1, lungeFx.age) * Math.PI) : 0;
     if (sprite) {
-      const px = Math.max(3, Math.round((def.boss ? 150 : 96) / sprite[0].length));
+      const px0 = Math.max(3, Math.round((def.boss ? 150 : 96) / sprite[0].length));
+      const px = Math.max(3, Math.round(px0 * (1 + lunge * 0.16)));
       const mxj = mx + jitter;
-      const baseY = my + (def.boss ? 70 : 46);
+      const baseY = my + (def.boss ? 70 : 46) + lunge * 22;
       // ground shadow
       ctx.save();
       ctx.globalAlpha = (dead ? 0.1 : 0.35);
@@ -448,6 +523,7 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, vga = tr
       }
     }
   });
+  atmosphere(ctx);
   vignette(ctx, 0.42);
   ctx.fillStyle = '#4cc9f0';
   ctx.font = '13px monospace';

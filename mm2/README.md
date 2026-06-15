@@ -6,9 +6,9 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 10 — animation & theming.** Flickering torch flames, combat hit reactions
-> (flash + knock), per-dungeon stone palettes, and higher-resolution sprites for the common foes.
-> Content stays fully data-driven.
+> Status: **Milestone 11 — feel & persistence.** Monster lunge animations, more detailed foe
+> sprites, per-dungeon atmosphere (cavern crystals/drips, sky orbs/sparkles), and multi-slot
+> saves with remembered display/sound settings. Content stays fully data-driven.
 
 ### Faithful-to-MM2 touches
 
@@ -71,6 +71,19 @@ A complete playthrough loop exercising every major system:
   shortcut hint shows in the action panel — fully playable without the mouse.
 - The on-screen movement pad is hidden on desktop (arrow keys handle movement) so the message log
   has room; it still appears on touch screens.
+
+### Milestone 11 — feel & persistence
+
+- **Monster lunge** — a monster lunges forward (and scales up) as it attacks, on top of the
+  existing struck-monster flash/knock.
+- **More detailed foes** — added 16-wide original sprites for kobold, giant rat, ghoul, wolf and
+  zombie (joining goblin/skeleton/orc), all with a fallback to the 12px set.
+- **Per-dungeon atmosphere** — the Sunken Caverns get cyan crystal sconces, a bluish wash and
+  water drips; the Sky Temple gets pale light orbs, a bright wash and drifting sparkles; Middlegate
+  keeps flickering torches.
+- **Multi-slot saves** — an autosave plus three manual slots, each showing the lead/day/gold/time;
+  a Saves screen handles save/load/delete and the title's Continue loads the most recent slot.
+- **Remembered settings** — VGA/EGA and sound preferences persist across sessions.
 
 ### Milestone 10 — animation & theming
 

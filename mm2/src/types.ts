@@ -13,6 +13,7 @@ export type Screen =
   | 'quests'
   | 'hire'
   | 'train'
+  | 'saves'
   | 'victory'
   | 'gameover';
 
@@ -322,7 +323,7 @@ export interface GameState {
 }
 
 export interface CombatFx {
-  kind: 'hit' | 'crit' | 'spell' | 'heal' | 'death' | 'partyhit';
+  kind: 'hit' | 'crit' | 'spell' | 'heal' | 'death' | 'partyhit' | 'lunge';
   side: 'monster' | 'party';
   idx: number;
   element?: string;
