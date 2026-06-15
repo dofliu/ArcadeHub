@@ -6,9 +6,10 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 6 — depth pass.** Combat visual effects, two more towns, equipment class
-> restrictions, training, traps, and equipment/race-reactive figures. Content stays fully
-> data-driven, so the world keeps growing toward a fuller MM2.
+> Status: **Milestone 7 — textured 3D-ish backgrounds.** The first-person dungeon and combat
+> scenes are now drawn with original procedural stone-brick walls, perspective-tiled floors and
+> ceilings, and an MM2-style framed viewport. Content stays fully data-driven, so the world
+> keeps growing toward a fuller MM2.
 
 ### Faithful-to-MM2 touches
 
@@ -63,6 +64,16 @@ A complete playthrough loop exercising every major system:
   Restore, Smite, Greater Protection, Sunray.
 - **Two new quests** across Atlantium (Crown of the Deep, the Ancient Scroll) that grant gear
   and teach a spell.
+
+### Milestone 7 — textured, framed backgrounds
+
+- **Stone-brick dungeon** — the first-person view now renders original procedural brick walls
+  (front faces + receding side trapezoids with mortar courses and joints), shaded by depth, over
+  a perspective-tiled floor and ceiling that converge to a vanishing point — a more solid, 3D feel.
+- **Framed viewport** — every scene gets an MM2-style bright double-line frame.
+- **Combat room** — the battle backdrop is now a textured stone chamber (brick back wall + tiled
+  floor) so monsters read as standing in a room, not floating on a gradient.
+- All art is **original procedural drawing** — no copied sprites, textures, names or box art.
 
 ### Milestone 6 — combat FX, more towns & system depth
 
