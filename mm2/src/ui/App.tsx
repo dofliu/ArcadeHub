@@ -10,7 +10,7 @@ import {
 } from './screens';
 import {
   ArrowUp, ArrowDown, RotateCcw, RotateCw, ArrowLeft, ArrowRight, Save, FolderOpen,
-  Coins, CalendarDays, Backpack, Skull, Trophy, ScrollText, Volume2, VolumeX,
+  Coins, CalendarDays, Backpack, Skull, Trophy, ScrollText, Volume2, VolumeX, MonitorCog,
 } from 'lucide-react';
 
 const DIRV = [
@@ -21,6 +21,9 @@ export const App: React.FC = () => {
   const [g, setG] = useState<GameState>(() => E.newGame());
   const [sheetActive, setSheetActive] = useState(0);
   const [soundOn, setSoundOn] = useState(true);
+  const [vga, setVga] = useState(true);
+  const vgaRef = useRef(vga);
+  vgaRef.current = vga;
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const apply = useCallback((fn: (d: GameState) => void) => {
@@ -102,7 +105,7 @@ export const App: React.FC = () => {
       if (!ctx) { rafRef.current = 0; return; }
       const now = performance.now();
       fxRef.current = fxRef.current.filter(e => now - e.start < FX_DUR);
-      drawCombat(ctx, cur);
+      drawCombat(ctx, cur, vgaRef.current);
       drawFx(ctx, cur, fxRef.current.map(e => ({ ...e, age: (now - e.start) / FX_DUR })));
       if (fxRef.current.length > 0) { rafRef.current = requestAnimationFrame(step); }
       else { rafRef.current = 0; }
@@ -115,11 +118,11 @@ export const App: React.FC = () => {
     if (!cv) return;
     const ctx = cv.getContext('2d');
     if (!ctx) return;
-    if (g.screen === 'combat') drawCombat(ctx, g);
-    else if (g.screen === 'dungeon') drawDungeon(ctx, g);
-    else if (g.screen === 'overworld') drawOverworld(ctx, g);
+    if (g.screen === 'combat') drawCombat(ctx, g, vga);
+    else if (g.screen === 'dungeon') drawDungeon(ctx, g, vga);
+    else if (g.screen === 'overworld') drawOverworld(ctx, g, vga);
     else drawTitle(ctx);
-  }, [g]);
+  }, [g, vga]);
 
   // flush queued combat FX -> animate
   useEffect(() => {
@@ -150,6 +153,7 @@ export const App: React.FC = () => {
         )}
         <div className="ml-auto flex gap-2">
           <Btn onClick={toggleSound} title={soundOn ? '靜音' : '開啟音效'}>{soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}</Btn>
+          <Btn onClick={() => setVga(v => !v)} title="切換畫面模式 VGA/EGA"><MonitorCog size={16} /><span className="ml-1 text-[10px]">{vga ? 'VGA' : 'EGA'}</span></Btn>
           {g.party.length > 0 && g.screen !== 'create' && (
             <>
               <Btn onClick={() => apply(d => { d.screen = 'quests'; })} title="任務日誌"><ScrollText size={16} /></Btn>

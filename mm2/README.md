@@ -6,10 +6,10 @@ style of the classic — it does not reuse any original assets, data, or content
 copyrighted). It lives as an independent sub-project, separate from the ArcadeHub mini-game
 framework.
 
-> Status: **Milestone 7 — textured 3D-ish backgrounds.** The first-person dungeon and combat
-> scenes are now drawn with original procedural stone-brick walls, perspective-tiled floors and
-> ceilings, and an MM2-style framed viewport. Content stays fully data-driven, so the world
-> keeps growing toward a fuller MM2.
+> Status: **Milestone 8 — VGA render.** The harsh EGA quantisation that flattened detail is gone;
+> scenes now render in full colour with smooth warm-stone shading, beveled bricks, perspective
+> floors, richer overworld terrain and bigger monster sprites. A header toggle switches between
+> VGA (default) and the old EGA look. Content stays fully data-driven.
 
 ### Faithful-to-MM2 touches
 
@@ -64,6 +64,18 @@ A complete playthrough loop exercising every major system:
   Restore, Smite, Greater Protection, Sunray.
 - **Two new quests** across Atlantium (Crown of the Deep, the Ancient Scroll) that grant gear
   and teach a spell.
+
+### Milestone 8 — VGA render
+
+- **Dropped the lossy EGA pass** for the main scenes — it was pixelating and 16-colour-snapping
+  everything into muddy gray. Scenes now render in full colour.
+- **Dungeon** — warm torchlit stone: beveled brick front walls (highlight/shadow per brick),
+  gradient-shaded receding side walls, and an alternating-band perspective floor/ceiling.
+- **Combat** — a proper stone chamber (brick back wall + angled side walls + tiled floor), with
+  **larger monster sprites** and ground shadows so they sit in the room.
+- **Overworld** — richer terrain tiles (textured grass, waved water, snow-capped peaks, trees)
+  and clearer markers (towns as buildings, dungeons as cave mouths).
+- **VGA/EGA toggle** in the header (defaults to VGA). All art is still original procedural drawing.
 
 ### Milestone 7 — textured, framed backgrounds
 
