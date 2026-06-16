@@ -212,6 +212,7 @@ export function newGame(): GameState {
     lootedChests: [],
     openedDoors: [],
     visitedMaps: ['overworld'],
+    bestiary: [],
     combat: null,
     combatSummary: null,
     dialog: null,
@@ -486,6 +487,7 @@ export function startCombat(g: GameState, encKey: string, enc: EncounterDef, map
     monsters, order: [], turn: 0, round: 1, cell: encKey, mapId,
     boss: !!enc.boss, surprise: enc.surprise, awaitingTarget: null, fx: null,
   };
+  for (const m of monsters) if (!g.bestiary.includes(m.defId)) g.bestiary.push(m.defId);
   for (const c of g.party) { c.blocking = false; c.buffAtk = 0; c.buffAc = 0; c.buffSpeed = 0; }
   buildOrder(g);
   g.screen = 'combat';

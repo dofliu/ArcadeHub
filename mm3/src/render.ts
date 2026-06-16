@@ -501,6 +501,22 @@ function drawMonsterSprite(ctx: CanvasRenderingContext2D, def: MonsterDef, x: nu
   }
 }
 
+// Draw a single monster centered on a small canvas (for the bestiary).
+export function drawMonsterPortrait(ctx: CanvasRenderingContext2D, defId: string, w: number, h: number) {
+  ctx.clearRect(0, 0, w, h);
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, '#1a1330'); grad.addColorStop(1, '#0c0913');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, w, h);
+  const def = monsterMap[defId];
+  if (!def) return;
+  const baseSz = sizeFor(def);
+  const sz = Math.min(baseSz, h * 0.34);
+  ctx.save();
+  ctx.translate(0, h * 0.12);
+  drawMonsterSprite(ctx, def, w / 2, h / 2, sz, false);
+  ctx.restore();
+}
+
 // ===== Title =====
 export function drawTitle(ctx: CanvasRenderingContext2D) {
   const grad = ctx.createLinearGradient(0, 0, 0, CH);

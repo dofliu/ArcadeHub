@@ -9,7 +9,7 @@ import { Btn, Panel, PartyRoster } from './common';
 import { StoneFrame, CarvedPanel, Compass } from './frame';
 import {
   CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen,
-  RestScreen, SavesScreen, CombatSummaryScreen, TrainScreen,
+  RestScreen, SavesScreen, CombatSummaryScreen, TrainScreen, BestiaryScreen,
 } from './screens';
 import {
   ArrowUp, ArrowDown, RotateCcw, RotateCw, ArrowLeft, ArrowRight, Save, Backpack,
@@ -176,6 +176,7 @@ export const App: React.FC = () => {
           {g.party.length > 0 && g.screen !== 'create' && (
             <>
               <Btn onClick={() => apply(d => { d.screen = 'quests'; })} title="任務日誌"><ScrollText size={15} /></Btn>
+              <Btn onClick={() => apply(d => { d.screen = 'bestiary'; })} title="怪物圖鑑"><BookOpen size={15} /></Btn>
               <Btn onClick={() => { setSheetActive(0); apply(d => { d.screen = 'sheet'; }); }} title="角色與背包"><Backpack size={15} /></Btn>
               <Btn onClick={() => apply(d => { d.screen = 'saves'; })} title="存讀檔"><Save size={15} /></Btn>
             </>
@@ -341,6 +342,7 @@ export const App: React.FC = () => {
           {g.screen === 'dialog' && <DialogScreen g={g} apply={apply} />}
           {g.screen === 'sheet' && <SheetScreen g={g} apply={apply} active={sheetActive} setActive={setSheetActive} sfx={sfx} />}
           {g.screen === 'quests' && <QuestLogScreen g={g} apply={apply} />}
+          {g.screen === 'bestiary' && <BestiaryScreen g={g} apply={apply} />}
           {g.screen === 'rest' && <RestScreen g={g} apply={apply} sfx={sfx} />}
           {g.screen === 'train' && <TrainScreen g={g} apply={apply} active={sheetActive} setActive={setSheetActive} sfx={sfx} />}
           {g.screen === 'saves' && <SavesScreen g={g} apply={apply} replace={setG} />}

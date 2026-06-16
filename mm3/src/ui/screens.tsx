@@ -2,14 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Character, EquipSlot, GameState, Gender, Alignment } from '../types';
 import * as E from '../engine';
 import {
-  RACES, CLASSES, raceMap, classMap, spellMap, itemMap, monsterMap, npcMap, shopMap,
+  RACES, CLASSES, MONSTERS, raceMap, classMap, spellMap, itemMap, monsterMap, npcMap, shopMap,
   QUESTS, townMap, PORTRAITS_PER_RACE,
 } from '../data/content';
 import { Btn, Panel, Bar, charLabel, StatusBadges } from './common';
 import { Portrait, PortraitOf } from './portraits';
+import { drawMonsterPortrait } from '../render';
 import {
   Swords, Shield, Sparkles, Wand2, FlaskConical, Footprints, Coins, Gem, Store, Cross, BedDouble,
-  Beer, ScrollText, ArrowLeft, Dices, Users, CheckCircle2, CircleAlert, Circle, GraduationCap,
+  Beer, ScrollText, ArrowLeft, Dices, Users, CheckCircle2, CircleAlert, Circle, GraduationCap, BookOpen,
   Tent, Save, FolderOpen, Trash2, Beef, Trophy,
 } from 'lucide-react';
 
@@ -743,6 +744,61 @@ export const SheetScreen: React.FC<{ g: GameState; apply: Apply; active: number;
             })}
           </div>
         </Panel>
+      </div>
+    </div>
+  );
+};
+
+// ============ Bestiary ============
+const FAMILY_ZH: Record<string, string> = {
+  beast: '野獸', humanoid: '人型', undead: '不死', dragon: '龍類', demon: '惡魔', elemental: '元素', construct: '造物', aberration: '異怪',
+};
+const MonsterIcon: React.FC<{ defId: string }> = ({ defId }) => {
+  const ref = React.useRef<HTMLCanvasElement>(null);
+  React.useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const ctx = cv.getContext('2d'); if (ctx) drawMonsterPortrait(ctx, defId, cv.width, cv.height);
+  }, [defId]);
+  return <canvas ref={ref} width={88} height={70} className="rounded border border-[#14100a] w-full" style={{ imageRendering: 'pixelated' }} />;
+};
+export const BestiaryScreen: React.FC<{ g: GameState; apply: Apply }> = ({ g, apply }) => {
+  const seen = g.bestiary.length, total = MONSTERS.length;
+  return (
+    <div className="w-full max-w-3xl">
+      <div className="flex items-center mb-3">
+        <BookOpen className="text-mm-gold mr-2" />
+        <h2 className="font-rune text-xl text-mm-gold">怪物圖鑑</h2>
+        <span className="ml-3 text-mm-light/50 text-sm">已記錄 {seen}/{total}</span>
+        <Btn className="ml-auto" onClick={() => apply(d => { d.screen = d.party.length ? d.prevExplore : 'title'; })}>
+          <ArrowLeft size={14} className="inline mr-1" />返回
+        </Btn>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {MONSTERS.map(mn => {
+          const known = g.bestiary.includes(mn.id);
+          if (!known) return (
+            <Panel key={mn.id} className="text-center opacity-60">
+              <div className="h-[70px] flex items-center justify-center text-3xl text-mm-light/30">？</div>
+              <div className="text-mm-light/40 text-xs mt-1">未發現</div>
+            </Panel>
+          );
+          return (
+            <Panel key={mn.id} className="">
+              <MonsterIcon defId={mn.id} />
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-sm text-mm-light font-bold truncate">{mn.name}{mn.boss && <span className="text-mm-gold"> ★</span>}</span>
+                <span className="text-[9px] text-mm-light/40">{FAMILY_ZH[mn.family || ''] || ''}</span>
+              </div>
+              <div className="grid grid-cols-4 gap-0.5 text-center text-[9px] mt-1">
+                <div className="bg-black/30 rounded py-0.5"><div className="text-red-400">HP</div>{mn.hp}</div>
+                <div className="bg-black/30 rounded py-0.5"><div className="text-blue-300">AC</div>{mn.ac}</div>
+                <div className="bg-black/30 rounded py-0.5"><div className="text-orange-300">傷</div>{mn.dmg[0]}-{mn.dmg[1]}</div>
+                <div className="bg-black/30 rounded py-0.5"><div className="text-mm-gold">XP</div>{mn.xp}</div>
+              </div>
+              <div className="text-[10px] text-mm-light/45 mt-1 leading-tight">{mn.desc}</div>
+            </Panel>
+          );
+        })}
       </div>
     </div>
   );

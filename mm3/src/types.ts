@@ -15,6 +15,7 @@ export type Screen =
   | 'cast'
   | 'train'
   | 'saves'
+  | 'bestiary'
   | 'victory'
   | 'gameover';
 
@@ -390,6 +391,7 @@ export interface GameState {
   lootedChests: string[];
   openedDoors: string[];
   visitedMaps: string[];
+  bestiary: string[];       // monster ids encountered
   combat: Combat | null;
   combatSummary: CombatSummary | null;
   dialog: { npcId: string; node: string } | null;
