@@ -6,7 +6,7 @@ import { CHARACTERS } from './fighting/characters';
 import {
   GameState, PlayerInput, createGame, stepGame, emptyInput, WORLD_W, WORLD_H,
 } from './fighting/engine';
-import { render, drawPortrait } from './fighting/render';
+import { render, drawPortrait, resetCamera } from './fighting/render';
 import { Play, RefreshCw, Users, Bot, Swords, ChevronLeft } from 'lucide-react';
 
 interface FightingProps {
@@ -95,7 +95,8 @@ const FightingGame: React.FC<FightingProps> = ({ onGameOver, language }) => {
   // --- Game loop -----------------------------------------------------------
   const startMatch = useCallback(() => {
     const vsAI = mode === 'cpu';
-    gsRef.current = createGame(p1Char, vsAI ? p2Char : p2Char, vsAI, difficulty);
+    gsRef.current = createGame(p1Char, p2Char, vsAI, difficulty);
+    resetCamera();
     endedRef.current = false;
     prevHitstop.current = 0;
     prevProjCount.current = 0;

@@ -8,6 +8,37 @@ import { Pose } from './types';
 // in the spirit of the project's other hand-drawn sprite work.
 // ===========================================================================
 
+// Moves animated as kicks (used for motion-smear placement).
+const KICK_MOVES = new Set(['lk', 'hk', 'clk', 'chk', 'jk', 'spinkick']);
+
+// Smoothed virtual camera. Lives at module scope because a single match is on
+// screen at a time; resetCamera() snaps it when a new match starts.
+const cam = { cx: WORLD_W / 2, cy: WORLD_H / 2, zoom: 1, init: false };
+export function resetCamera() { cam.init = false; }
+
+function updateCamera(a: Fighter, b: Fighter) {
+  const spread = Math.abs(a.x - b.x);
+  const topReach = Math.max(a.fy, b.fy) + 150;
+  // How much world must be visible horizontally / vertically.
+  const needW = Math.max(380, spread + 360);
+  const needH = Math.max(210, topReach + 60);
+  const zoomW = WORLD_W / Math.min(WORLD_W, needW);
+  const zoomH = WORLD_H / Math.min(WORLD_H, needH);
+  const zoom = Math.max(1.0, Math.min(1.55, Math.min(zoomW, zoomH)));
+  const viewW = WORLD_W / zoom, viewH = WORLD_H / zoom;
+  let cx = (a.x + b.x) / 2;
+  cx = Math.max(viewW / 2, Math.min(WORLD_W - viewW / 2, cx));
+  let cy = (GROUND_Y + 18) - viewH / 2;       // keep the floor near the bottom
+  cy = Math.max(viewH / 2, Math.min(WORLD_H - viewH / 2, cy));
+  if (!cam.init) { cam.cx = cx; cam.cy = cy; cam.zoom = zoom; cam.init = true; }
+  else {
+    const k = 0.14;
+    cam.cx += (cx - cam.cx) * k;
+    cam.cy += (cy - cam.cy) * k;
+    cam.zoom += (zoom - cam.zoom) * k;
+  }
+}
+
 // Pick the pose for a fighter's current visual state.
 function poseFor(f: Fighter, frame: number): Pose {
   switch (f.state) {
@@ -53,6 +84,7 @@ export function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, frame: nu
   const giSh = flash ? '#ffffff' : pal.giShade;
   const accent = flash ? '#ffffff' : pal.accent;
   const hair = flash ? '#ffffff' : pal.hair;
+  const aura = pal.aura;
 
   // Local -> screen transform (facing mirrors x).
   const TS = (lx: number, ly: number) => ({ x: f.x + f.facing * lx, y: GROUND_Y - f.fy - ly });
@@ -75,6 +107,21 @@ export function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, frame: nu
   ctx.beginPath();
   ctx.ellipse(f.x, GROUND_Y + 2, 26 * shScale, 7 * shScale, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // Squash & stretch around the feet based on vertical velocity (springy jumps).
+  let sqx = 1, sqy = 1;
+  if (f.fy > 0.5) {
+    const v = Math.max(-13, Math.min(13, f.vy));
+    sqy = Math.max(0.86, Math.min(1.18, 1 + v * 0.011));
+    sqx = 1 / sqy;
+  }
+  const feetX = f.x, feetY = GROUND_Y - f.fy;
+  ctx.save();
+  if (sqx !== 1 || sqy !== 1) {
+    ctx.translate(feetX, feetY);
+    ctx.scale(sqx, sqy);
+    ctx.translate(-feetX, -feetY);
+  }
 
   // Back limbs (behind torso).
   bone(ctx, hipB.x, hipB.y, kneeB.x, kneeB.y, 13, giSh);
@@ -141,6 +188,22 @@ export function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, frame: nu
     ctx.fillRect(head.x + f.facing * 3, head.y, 3, 4);
   }
 
+  // Motion smear: trailing after-images on the striking limb during active frames.
+  if (f.move && f.state === 'attack') {
+    const m = f.move;
+    const inActive = f.moveFrame > m.startup && f.moveFrame <= m.startup + m.active;
+    if (inActive) {
+      const kick = f.moveKey ? KICK_MOVES.has(f.moveKey) : false;
+      const pivot = kick ? kneeF : elbowF;
+      const tip = kick ? footF : handF;
+      for (let i = 3; i >= 1; i--) {
+        ctx.globalAlpha = 0.1 * i;
+        bone(ctx, pivot.x - f.facing * i * 4, pivot.y, tip.x - f.facing * i * 5, tip.y, kick ? 12 : 9, aura);
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
   // Front arm (top-most, the striking arm).
   bone(ctx, shF.x, shF.y, elbowF.x, elbowF.y, 10, gi);
   bone(ctx, elbowF.x, elbowF.y, handF.x, handF.y, 8, skin);
@@ -159,6 +222,8 @@ export function drawFighter(ctx: CanvasRenderingContext2D, f: Fighter, frame: nu
       drawStar(ctx, sx, sy, 5, '#ffe24a');
     }
   }
+
+  ctx.restore(); // end squash & stretch transform
 }
 
 function drawFoot(ctx: CanvasRenderingContext2D, knee: { x: number; y: number }, foot: { x: number; y: number }, color: string) {
@@ -421,15 +486,20 @@ export function drawPortrait(
 
 export function render(ctx: CanvasRenderingContext2D, state: GameState) {
   const frame = state.frame;
+  const [a, b] = state.fighters;
+  updateCamera(a, b);
+
   ctx.save();
-  // Screen shake.
-  if (state.shake > 0.5) {
-    ctx.translate((Math.random() - 0.5) * state.shake, (Math.random() - 0.5) * state.shake);
-  }
+  // Dynamic camera: follow the action, zoom by distance, punch in on big hits.
+  const shake = state.shake > 0.5 ? state.shake : 0;
+  const zoom = cam.zoom * (1 + Math.min(state.shake, 14) * 0.004);
+  ctx.translate(WORLD_W / 2 + (Math.random() - 0.5) * shake, WORLD_H / 2 + (Math.random() - 0.5) * shake);
+  ctx.scale(zoom, zoom);
+  ctx.translate(-cam.cx, -cam.cy);
+
   drawStage(ctx, frame);
 
-  // Draw the fighter further back first (simple depth by x).
-  const [a, b] = state.fighters;
+  // Draw the airborne fighter last so it overlaps (simple depth).
   const order = a.fy >= b.fy ? [b, a] : [a, b];
   for (const f of order) drawFighter(ctx, f, frame);
 
@@ -437,7 +507,13 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState) {
   drawSparks(ctx, state);
   ctx.restore();
 
-  // HUD (unaffected by shake).
+  // Impact flash on heavy hits.
+  if (state.shake > 7) {
+    ctx.fillStyle = `rgba(255,255,255,${Math.min(0.22, (state.shake - 7) * 0.03)})`;
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+  }
+
+  // HUD (unaffected by camera / shake).
   drawHealthBar(ctx, a, 0);
   drawHealthBar(ctx, b, 1);
   drawMeter(ctx, a, 0);
