@@ -405,11 +405,11 @@ const AutoMap: React.FC<{ g: GameState }> = ({ g }) => {
           const gkey = `${map.id}:${key}`;
           let fill = '#0c0913';
           if (ch === '#') fill = '#46402f';
-          else if (map.doors?.[key]) fill = g.openedDoors.includes(gkey) ? '#2a2440' : '#5a3e8c';
-          else if (map.portals?.[key]) fill = '#4cc9f0';
+          else if (map.doors?.[key]) fill = g.openedDoors.includes(gkey) ? '#2b2418' : '#8a5a26';
+          else if (map.portals?.[key]) fill = '#6fb3a4';
           else if (map.chests?.[key] && !g.lootedChests.includes(gkey)) fill = '#e7b53b';
           else if (map.encounters?.[key] && !g.clearedEncounters.includes(gkey)) fill = '#6b2226';
-          else fill = '#221c38';
+          else fill = '#2b2418';
           return <rect key={key} x={x * cell} y={y * cell} width={cell - 1} height={cell - 1} fill={fill} />;
         })
       )}

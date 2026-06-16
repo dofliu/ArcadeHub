@@ -519,30 +519,35 @@ export function drawMonsterPortrait(ctx: CanvasRenderingContext2D, defId: string
 
 // ===== Title =====
 export function drawTitle(ctx: CanvasRenderingContext2D) {
+  // warm dusk sky over a stone horizon
   const grad = ctx.createLinearGradient(0, 0, 0, CH);
-  grad.addColorStop(0, '#1a1330');
-  grad.addColorStop(1, '#06060c');
+  grad.addColorStop(0, '#3a2c18');
+  grad.addColorStop(0.5, '#241a10');
+  grad.addColorStop(1, '#0d0a06');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, CW, CH);
-  // stars
-  for (let i = 0; i < 60; i++) {
-    const sx = (i * 97) % CW, sy = (i * 53) % (CH * 0.6);
-    ctx.fillStyle = `rgba(255,255,255,${0.2 + (i % 5) * 0.12})`;
-    ctx.fillRect(sx, sy, 1.5, 1.5);
-  }
-  // mountains
-  ctx.fillStyle = '#15101f';
+  // setting sun
+  ctx.fillStyle = 'rgba(207,155,60,0.5)';
+  ctx.beginPath(); ctx.arc(CX, CH * 0.42, 70, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(230,200,140,0.55)';
+  ctx.beginPath(); ctx.arc(CX, CH * 0.42, 44, 0, Math.PI * 2); ctx.fill();
+  // distant stone mountains (two ridges)
+  ctx.fillStyle = '#2a2014';
   ctx.beginPath(); ctx.moveTo(0, CH);
-  for (let x = 0; x <= CW; x += 40) ctx.lineTo(x, CH * 0.7 - Math.sin(x * 0.015) * 40);
+  for (let x = 0; x <= CW; x += 36) ctx.lineTo(x, CH * 0.62 - Math.sin(x * 0.013) * 30);
+  ctx.lineTo(CW, CH); ctx.fill();
+  ctx.fillStyle = '#15100a';
+  ctx.beginPath(); ctx.moveTo(0, CH);
+  for (let x = 0; x <= CW; x += 44) ctx.lineTo(x, CH * 0.74 - Math.sin(x * 0.018 + 1) * 36);
   ctx.lineTo(CW, CH); ctx.fill();
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#e7b53b';
+  ctx.fillStyle = '#e6d091';
   ctx.font = 'bold 38px serif';
   ctx.fillText('MIGHT & MAGIC III', CX, CY - 26);
-  ctx.fillStyle = '#7c5cff';
+  ctx.fillStyle = '#cf9b3c';
   ctx.font = '20px serif';
   ctx.fillText('— Isles of Terra —', CX, CY + 6);
-  ctx.fillStyle = '#9a93b3';
+  ctx.fillStyle = '#b0a079';
   ctx.font = '13px monospace';
   ctx.fillText('A standalone tribute', CX, CY + 38);
   ctx.textAlign = 'start';

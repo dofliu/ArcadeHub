@@ -12,7 +12,7 @@ export const Btn: React.FC<{
   children: React.ReactNode;
 }> = ({ onClick, disabled, variant = 'ghost', className = '', title, children }) => {
   const styles: Record<string, string> = {
-    primary: 'bg-mm-arcane hover:bg-violet-500 text-white border-violet-400',
+    primary: 'bg-mm-arcane hover:bg-[#5f93a0] text-white border-[#6a9aa3]',
     gold: 'bg-mm-gold/20 hover:bg-mm-gold/40 text-mm-gold border-mm-gold/60',
     danger: 'bg-mm-blood/30 hover:bg-mm-blood/50 text-red-200 border-red-500/60',
     ghost: 'bg-mm-panel hover:bg-mm-edge text-mm-light border-mm-edge',
@@ -90,7 +90,7 @@ export const PartyRoster: React.FC<{
             down ? 'opacity-50 border-mm-edge bg-black/40'
               : highlight === i ? 'border-mm-neon bg-mm-neon/10 shadow-[0_0_12px_rgba(76,201,240,0.5)]'
               : active === i ? 'border-mm-gold bg-mm-gold/10'
-              : 'border-[#46402f] bg-gradient-to-b from-[#2a2419] to-[#191420] hover:border-mm-gold/60'
+              : 'border-[#46402f] bg-gradient-to-b from-[#2b2418] to-[#171008] hover:border-mm-gold/60'
           }`}
           style={{ boxShadow: 'inset 0 1px 2px rgba(255,240,200,0.08)' }}
         >

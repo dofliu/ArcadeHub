@@ -79,24 +79,24 @@ export const Compass: React.FC<{ dir: Dir; size?: number }> = ({ dir, size = 84 
     <svg width={size} height={size} viewBox="0 0 100 100">
       <defs>
         <radialGradient id="compassbg" cx="0.5" cy="0.45" r="0.6">
-          <stop offset="0" stopColor="#2a2440" />
-          <stop offset="1" stopColor="#0c0913" />
+          <stop offset="0" stopColor="#3a2e1a" />
+          <stop offset="1" stopColor="#100c06" />
         </radialGradient>
       </defs>
-      <circle cx="50" cy="50" r="46" fill="url(#compassbg)" stroke="#46402f" strokeWidth="4" />
+      <circle cx="50" cy="50" r="46" fill="url(#compassbg)" stroke="#5e4c30" strokeWidth="4" />
       <circle cx="50" cy="50" r="40" fill="none" stroke="#1c1810" strokeWidth="1" />
       {/* cardinal marks */}
       {[0, 1, 2, 3].map(i => {
         const a = (i * 90) * Math.PI / 180;
         const x = 50 + Math.sin(a) * 34, y = 50 - Math.cos(a) * 34;
         return <text key={i} x={x} y={y + 4} textAnchor="middle" fontSize="11"
-          fill={i === dir ? '#e7b53b' : '#6f6890'} fontWeight={i === dir ? 'bold' : 'normal'}>{DIR_LABEL[i]}</text>;
+          fill={i === dir ? '#cf9b3c' : '#8a7a52'} fontWeight={i === dir ? 'bold' : 'normal'}>{DIR_LABEL[i]}</text>;
       })}
       {/* needle */}
       <g transform={`rotate(${angle} 50 50)`}>
-        <polygon points="50,16 44,52 56,52" fill="#9b2226" />
-        <polygon points="50,84 44,48 56,48" fill="#4cc9f0" />
-        <circle cx="50" cy="50" r="4" fill="#e7b53b" stroke="#1c1810" strokeWidth="1" />
+        <polygon points="50,16 44,52 56,52" fill="#9e2b25" />
+        <polygon points="50,84 44,48 56,48" fill="#6fb3a4" />
+        <circle cx="50" cy="50" r="4" fill="#cf9b3c" stroke="#1c1810" strokeWidth="1" />
       </g>
     </svg>
   );

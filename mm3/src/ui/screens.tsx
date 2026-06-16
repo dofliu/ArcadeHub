@@ -640,7 +640,7 @@ export const CombatSummaryScreen: React.FC<{ g: GameState; apply: Apply }> = ({ 
   if (!s) return null;
   return (
     <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-sm rounded-lg border-2 border-mm-gold/60 bg-gradient-to-b from-[#2a2419] to-[#191420] p-5 text-center"
+      <div className="w-full max-w-sm rounded-lg border-2 border-mm-gold/60 bg-gradient-to-b from-[#2b2418] to-[#171008] p-5 text-center"
         style={{ boxShadow: '0 0 30px rgba(231,181,59,0.3)' }}>
         <Trophy className="inline text-mm-gold mb-1" size={36} />
         <div className="font-rune text-mm-gold text-xl mb-3">{s.boss ? '強敵討伐！' : '戰鬥勝利！'}</div>

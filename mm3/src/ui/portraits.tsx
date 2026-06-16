@@ -136,8 +136,8 @@ export const Portrait: React.FC<FaceProps & { className?: string }> = ({ raceId,
       style={{ imageRendering: 'pixelated', display: 'block' }} shapeRendering="crispEdges">
       <defs>
         <radialGradient id="nichegrad" cx="0.5" cy="0.4" r="0.7">
-          <stop offset="0" stopColor="#2a2440" />
-          <stop offset="1" stopColor="#0c0913" />
+          <stop offset="0" stopColor="#3a2e1a" />
+          <stop offset="1" stopColor="#100c06" />
         </radialGradient>
       </defs>
       {els}
