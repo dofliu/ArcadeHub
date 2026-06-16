@@ -636,6 +636,8 @@ const byId = <T extends { id: string }>(arr: T[]) => {
   return m;
 };
 
+export const PORTRAITS_PER_RACE = 4;
+
 export const raceMap = byId(RACES);
 export const classMap = byId(CLASSES);
 export const spellMap = byId(SPELLS);

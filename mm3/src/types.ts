@@ -13,6 +13,8 @@ export type Screen =
   | 'quests'
   | 'rest'
   | 'cast'
+  | 'train'
+  | 'saves'
   | 'victory'
   | 'gameover';
 
