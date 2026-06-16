@@ -312,47 +312,55 @@ function drawSparks(ctx: CanvasRenderingContext2D, state: GameState) {
   }
 }
 
-function drawStage(ctx: CanvasRenderingContext2D, frame: number) {
-  // Sky gradient.
+function drawStage(ctx: CanvasRenderingContext2D, frame: number, camOffsetX: number) {
+  // Sky gradient (flat backdrop, no parallax).
   const sky = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
   sky.addColorStop(0, '#241b3a');
   sky.addColorStop(0.6, '#3a2456');
   sky.addColorStop(1, '#7a3b5c');
   ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, WORLD_W, GROUND_Y);
+  ctx.fillRect(-80, 0, WORLD_W + 160, GROUND_Y);
 
-  // Distant sun/moon.
+  // Distant sun/moon — moves least with the camera (far away).
+  ctx.save();
+  ctx.translate(0.9 * camOffsetX, 0);
   ctx.fillStyle = 'rgba(255,210,140,0.5)';
   ctx.beginPath(); ctx.arc(WORLD_W * 0.5, 120, 70, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 
-  // Skyline silhouette.
+  // Skyline + lit windows — mid-distance parallax layer.
+  ctx.save();
+  ctx.translate(0.6 * camOffsetX, 0);
   ctx.fillStyle = '#1e1430';
-  for (let i = 0; i < 16; i++) {
-    const bw = 50 + ((i * 53) % 40);
-    const bh = 70 + ((i * 37) % 110);
+  for (let i = -2; i < 18; i++) {
+    const bw = 50 + (((i + 2) * 53) % 40);
+    const bh = 70 + (((i + 2) * 37) % 110);
     ctx.fillRect(i * 58 - 10, GROUND_Y - bh, bw, bh);
   }
-  // Lit windows.
   ctx.fillStyle = 'rgba(255,224,150,0.5)';
   for (let i = 0; i < 90; i++) {
     if ((i * 7 + (frame >> 5)) % 5 === 0) continue;
-    const wx = 10 + (i * 67) % WORLD_W;
+    const wx = -40 + (i * 67) % (WORLD_W + 80);
     const wy = GROUND_Y - 30 - (i * 29) % 120;
     ctx.fillRect(wx, wy, 4, 5);
   }
+  ctx.restore();
 
-  // Crowd row.
+  // Crowd row — near-distance parallax layer (moves almost with the floor).
+  ctx.save();
+  ctx.translate(0.25 * camOffsetX, 0);
   ctx.fillStyle = '#140d22';
-  ctx.fillRect(0, GROUND_Y - 26, WORLD_W, 26);
-  for (let i = 0; i < WORLD_W / 18; i++) {
+  ctx.fillRect(-80, GROUND_Y - 26, WORLD_W + 160, 26);
+  for (let i = -4; i < WORLD_W / 18 + 4; i++) {
     const bob = Math.sin(frame * 0.08 + i) * 2;
     ctx.fillStyle = i % 3 === 0 ? '#241634' : '#1b1029';
     ctx.beginPath();
     ctx.arc(9 + i * 18, GROUND_Y - 18 + bob, 7, 0, Math.PI * 2);
     ctx.fill();
   }
+  ctx.restore();
 
-  // Floor.
+  // Floor (foreground, moves 1:1 with the fighters).
   const floor = ctx.createLinearGradient(0, GROUND_Y, 0, WORLD_H);
   floor.addColorStop(0, '#6b4a2f');
   floor.addColorStop(1, '#3a2719');
@@ -497,7 +505,7 @@ export function render(ctx: CanvasRenderingContext2D, state: GameState) {
   ctx.scale(zoom, zoom);
   ctx.translate(-cam.cx, -cam.cy);
 
-  drawStage(ctx, frame);
+  drawStage(ctx, frame, cam.cx - WORLD_W / 2);
 
   // Draw the airborne fighter last so it overlaps (simple depth).
   const order = a.fy >= b.fy ? [b, a] : [a, b];
