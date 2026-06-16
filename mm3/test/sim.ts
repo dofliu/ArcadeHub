@@ -189,6 +189,57 @@ assert(E.condMet(g, { notFlag: 'never_set' }) === true, 'condMet notFlag true');
 const startNode = npcMap['tavern_keeper'].nodes['start'];
 assert(startNode.options.filter(o => E.condMet(g, o.cond)).length === startNode.options.length, 'unconditional options stay visible');
 
+// 14b) Map integrity: portals / encounters / chests sit on passable terrain; overworld fully reachable
+console.log('Map integrity:');
+{
+  const PASS = (c: string) => c !== '#' && c !== '~' && c !== '^' && c !== 'T' && c !== 'L';
+  let badCells = 0;
+  let raggedRows = 0;
+  for (const map of Object.values(mapMap)) {
+    const w = map.grid[0].length;
+    if (!map.grid.every(r => r.length === w)) { console.error(`    ragged grid ${map.id}`); raggedRows++; }
+  }
+  assert(raggedRows === 0, 'all map grids are rectangular');
+  for (const map of Object.values(mapMap)) {
+    const cellAt = (x: number, y: number) => map.grid[y]?.[x];
+    const special: Record<string, true> = {};
+    for (const k of [...Object.keys(map.portals || {}), ...Object.keys(map.encounters || {}), ...Object.keys(map.chests || {}), ...Object.keys(map.events || {})]) special[k] = true;
+    for (const k of Object.keys(special)) {
+      const [x, y] = k.split(',').map(Number);
+      const c = cellAt(x, y);
+      const isDoor = c === 'D' || !!map.doors?.[k];
+      if (!isDoor && !PASS(c || '#')) { console.error(`    bad cell ${map.id}:${k} on '${c}'`); badCells++; }
+    }
+  }
+  assert(badCells === 0, 'all special cells are on passable terrain');
+
+  // BFS reachability from start for every map (doors are passable)
+  let unreachable = 0;
+  for (const map of Object.values(mapMap)) {
+    const st = map.start!;
+    const passable = (x: number, y: number) => {
+      const c = map.grid[y]?.[x];
+      if (!c) return false;
+      if (c === 'D' || map.doors?.[`${x},${y}`]) return true;
+      return c !== '#' && c !== '~' && c !== '^' && c !== 'T' && c !== 'L';
+    };
+    const seen = new Set<string>([`${st.x},${st.y}`]);
+    const queue = [[st.x, st.y]];
+    while (queue.length) {
+      const [x, y] = queue.shift()!;
+      for (const [dx, dy] of [[0, -1], [1, 0], [0, 1], [-1, 0]]) {
+        const nx = x + dx, ny = y + dy; const key = `${nx},${ny}`;
+        if (seen.has(key)) continue;
+        if (passable(nx, ny)) { seen.add(key); queue.push([nx, ny]); }
+      }
+    }
+    for (const k of [...Object.keys(map.portals || {}), ...Object.keys(map.encounters || {}), ...Object.keys(map.chests || {})]) {
+      if (!seen.has(k)) { console.error(`    unreachable ${map.id}:${k}`); unreachable++; }
+    }
+  }
+  assert(unreachable === 0, 'all portals / encounters / chests reachable from each map start');
+}
+
 // 15) Save round-trip shape
 console.log('Save/load shape:');
 const json = JSON.parse(JSON.stringify(g)) as GameState;

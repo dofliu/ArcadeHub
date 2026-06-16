@@ -863,9 +863,15 @@ function endCombatWin(g: GameState) {
     handleBossDrop(g, bossDef.id, drops);
   }
   g.clearedEncounters = [...g.clearedEncounters, c.cell];
-  g.combatSummary = { xp: share, gold: totalGold, gems: totalGems, drops, levelUps, boss: c.boss };
   g.combat = null;
-  g.screen = g.prevExplore;
+  if (g.flags['terra_cleared'] && !g.flags['victory_shown']) {
+    g.flags['victory_shown'] = true;
+    g.combatSummary = null;
+    g.screen = 'victory';
+  } else {
+    g.combatSummary = { xp: share, gold: totalGold, gems: totalGems, drops, levelUps, boss: c.boss };
+    g.screen = g.prevExplore;
+  }
 }
 
 function handleBossDrop(g: GameState, bossId: string, drops: string[]) {

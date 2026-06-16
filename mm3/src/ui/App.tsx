@@ -325,11 +325,22 @@ export const App: React.FC = () => {
           {g.screen === 'train' && <TrainScreen g={g} apply={apply} active={sheetActive} setActive={setSheetActive} sfx={sfx} />}
           {g.screen === 'saves' && <SavesScreen g={g} apply={apply} replace={setG} />}
 
-          {orbDone && g.screen === 'victory' && (
-            <Panel className="w-full text-center">
-              <Trophy className="inline text-mm-gold mb-1" size={32} />
-              <div className="font-rune text-mm-gold text-lg">泰拉群島重歸光明！</div>
-            </Panel>
+          {g.screen === 'victory' && (
+            <>
+              <StoneFrame><canvas ref={canvasRef} width={CW} height={CH} className="block bg-black max-w-full" style={{ imageRendering: 'pixelated' }} /></StoneFrame>
+              <Panel className="w-full max-w-lg text-center mt-2">
+                <Trophy className="inline text-mm-gold mb-1" size={40} />
+                <div className="font-rune text-mm-gold text-2xl mb-2">泰拉群島重歸光明！</div>
+                <p className="text-mm-light/70 text-sm mb-3">
+                  泰拉守護者崩解，群島的核心終於平靜。你的隊伍橫越索皮加、泉源與荒野，討伐了巫妖王與遠古造物，
+                  名字將永遠銘刻在泰拉的傳說之中。
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <Btn variant="gold" onClick={() => apply(d => { d.screen = 'town'; d.townId = 'sorpigal'; })}>回到城鎮</Btn>
+                  <Btn variant="primary" onClick={() => { E.clearSave(); setG(E.newGame()); }}>新的冒險</Btn>
+                </div>
+              </Panel>
+            </>
           )}
         </main>
       )}
