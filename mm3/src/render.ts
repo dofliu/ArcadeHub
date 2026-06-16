@@ -66,14 +66,24 @@ export function drawDungeon(ctx: CanvasRenderingContext2D, g: GameState) {
     const sideColor = `rgb(${sideShade},${sideShade - 6},${sideShade + 14})`;
     const frontColor = `rgb(${frontShade},${frontShade - 8},${frontShade + 16})`;
 
-    // left/right walls (as trapezoids) + brick seams
-    if (isSolid(grid, cx + left.x, cy + left.y) || isDoorClosed(g, cx + left.x, cy + left.y)) {
+    // left/right walls (as trapezoids) + brick seams + torches
+    const leftSolid = isSolid(grid, cx + left.x, cy + left.y) || isDoorClosed(g, cx + left.x, cy + left.y);
+    const rightSolid = isSolid(grid, cx + right.x, cy + right.y) || isDoorClosed(g, cx + right.x, cy + right.y);
+    if (leftSolid) {
       quad(ctx, [near.l, near.t, far.l, far.t, far.l, far.b, near.l, near.b], sideColor);
       seam(ctx, near.l, near.t, far.l, far.t, far.l, far.b, near.l, near.b, sideShade);
     }
-    if (isSolid(grid, cx + right.x, cy + right.y) || isDoorClosed(g, cx + right.x, cy + right.y)) {
+    if (rightSolid) {
       quad(ctx, [near.r, near.t, far.r, far.t, far.r, far.b, near.r, near.b], sideColor);
       seam(ctx, near.r, near.t, far.r, far.t, far.r, far.b, near.r, near.b, sideShade);
+    }
+    // torches on alternating depths (skip the nearest, too big)
+    if ((s === 1 || s === 3) && s < maxDepth) {
+      const tx = (near.l + far.l) / 2, ty = (near.t + far.t) / 2 + (far.b - far.t) * 0.18;
+      const tscale = SCALES[s] * 1.1;
+      if (leftSolid) torch(ctx, tx, ty, tscale, lit);
+      const tx2 = (near.r + far.r) / 2;
+      if (rightSolid) torch(ctx, tx2, ty, tscale, lit);
     }
     // front wall
     const fx = cx + fwd.x, fy = cy + fwd.y;
@@ -133,6 +143,25 @@ function isDoorClosed(g: GameState, x: number, y: number): boolean {
 function marker(ctx: CanvasRenderingContext2D, far: ReturnType<typeof opening>, color: string) {
   ctx.fillStyle = color;
   ctx.fillRect(far.l + (far.r - far.l) * 0.25, far.b - 8, (far.r - far.l) * 0.5, 6);
+}
+
+// a wall-mounted torch with a warm glow
+function torch(ctx: CanvasRenderingContext2D, x: number, y: number, scale: number, lit: boolean) {
+  const h = 26 * scale, w = 6 * scale;
+  // bracket
+  ctx.fillStyle = '#2a2018';
+  ctx.fillRect(x - w / 2, y, w, h);
+  // glow
+  const gr = ctx.createRadialGradient(x, y - 4 * scale, 1, x, y - 4 * scale, 34 * scale);
+  gr.addColorStop(0, lit ? 'rgba(255,210,120,0.55)' : 'rgba(255,170,70,0.5)');
+  gr.addColorStop(1, 'rgba(255,150,40,0)');
+  ctx.fillStyle = gr;
+  ctx.beginPath(); ctx.arc(x, y - 4 * scale, 34 * scale, 0, Math.PI * 2); ctx.fill();
+  // flame
+  ctx.fillStyle = '#ffcf66';
+  ctx.beginPath(); ctx.moveTo(x, y - 16 * scale); ctx.quadraticCurveTo(x + 5 * scale, y - 6 * scale, x, y); ctx.quadraticCurveTo(x - 5 * scale, y - 6 * scale, x, y - 16 * scale); ctx.fill();
+  ctx.fillStyle = '#ff8a3a';
+  ctx.beginPath(); ctx.moveTo(x, y - 11 * scale); ctx.quadraticCurveTo(x + 3 * scale, y - 5 * scale, x, y - 1 * scale); ctx.quadraticCurveTo(x - 3 * scale, y - 5 * scale, x, y - 11 * scale); ctx.fill();
 }
 
 // ===== Overworld top-down =====
