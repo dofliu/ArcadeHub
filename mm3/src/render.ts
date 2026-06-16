@@ -242,7 +242,8 @@ export function drawTownScene(ctx: CanvasRenderingContext2D, townId: string) {
 }
 
 // ===== Combat =====
-export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
+// fxAlpha (0..1) fades the most recent hit/spell flash for smooth animation.
+export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, fxAlpha = 1) {
   const c = g.combat;
   const grad = ctx.createLinearGradient(0, 0, 0, CH);
   grad.addColorStop(0, '#1a0a1e');
@@ -281,20 +282,19 @@ export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState) {
       ctx.fillText(def.name + (asleep ? ' 💤' : ''), mx, my - sz - 18);
     }
   });
-  // fx flash
+  // fx flash (fades via fxAlpha)
   const fx = c.fx;
-  if (fx && fx.targetSide === 'monster') {
+  if (fx && fxAlpha > 0.02 && fx.targetSide === 'monster') {
     if (fx.targetIdx >= 0) {
       const cols = Math.min(n, 4);
       const row = Math.floor(fx.targetIdx / cols);
       const inRow = Math.min(cols, n - row * cols);
       const idxInRow = fx.targetIdx % cols;
       const spread = CW / (inRow + 1);
-      flash(ctx, spread * (idxInRow + 1), CH * 0.4 + row * 84, fx);
+      flash(ctx, spread * (idxInRow + 1), CH * 0.4 + row * 84 - (1 - fxAlpha) * 18, fx, fxAlpha);
     } else {
-      // all-enemy spell: full flash
-      ctx.fillStyle = fxColor(fx) + '33';
-      ctx.fillRect(0, 0, CW, CH);
+      ctx.save(); ctx.globalAlpha = 0.25 * fxAlpha; ctx.fillStyle = fxColor(fx);
+      ctx.fillRect(0, 0, CW, CH); ctx.restore();
     }
   }
   ctx.textAlign = 'start';
@@ -310,17 +310,21 @@ function fxColor(fx: { element?: string; kind: string }): string {
     case 'holy': return '#ffe08a'; case 'poison': return '#7ec850'; default: return '#c084ff';
   }
 }
-function flash(ctx: CanvasRenderingContext2D, x: number, y: number, fx: { kind: string; element?: string; amount?: number }) {
+function flash(ctx: CanvasRenderingContext2D, x: number, y: number, fx: { kind: string; element?: string; amount?: number }, alpha = 1) {
   const col = fx.kind === 'crit' ? '#fff2a0' : fxColor(fx);
   ctx.save();
-  ctx.globalAlpha = 0.6;
+  ctx.globalAlpha = 0.6 * alpha;
   ctx.fillStyle = col;
-  ctx.beginPath(); ctx.arc(x, y, fx.kind === 'crit' ? 40 : 30, 0, Math.PI * 2); ctx.fill();
+  const r = (fx.kind === 'crit' ? 40 : 30) * (0.7 + 0.3 * alpha);
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
   if (fx.amount) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = fx.kind === 'crit' ? '#fff2a0' : '#fff';
-    ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+    ctx.font = `bold ${fx.kind === 'crit' ? 20 : 16}px sans-serif`; ctx.textAlign = 'center';
     ctx.fillText(`-${fx.amount}`, x, y - 28);
+    ctx.restore();
   }
 }
 

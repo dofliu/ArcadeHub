@@ -26,6 +26,7 @@ export const App: React.FC = () => {
   const [soundOn, setSoundOn] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fxRef = useRef('');
+  const fxStartRef = useRef(0);
 
   const apply = useCallback((fn: (d: GameState) => void) => {
     setG(prev => { const d = E.clone(prev); fn(d); return d; });
@@ -80,17 +81,34 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', onKey);
   }, [g.screen, move, turn, moveOver]);
 
-  // ----- canvas render -----
+  // ----- canvas render (static screens) -----
   useEffect(() => {
     const cv = canvasRef.current;
     if (!cv) return;
     const ctx = cv.getContext('2d');
     if (!ctx) return;
-    if (g.screen === 'combat') drawCombat(ctx, g);
-    else if (g.screen === 'dungeon') drawDungeon(ctx, g);
+    if (g.screen === 'combat') return; // combat is animated below
+    if (g.screen === 'dungeon') drawDungeon(ctx, g);
     else if (g.screen === 'overworld') drawOverworld(ctx, g);
     else if (g.screen === 'town') drawTownScene(ctx, g.townId);
     else drawTitle(ctx);
+  }, [g]);
+
+  // ----- combat canvas: animated fx via rAF -----
+  useEffect(() => {
+    if (g.screen !== 'combat') return;
+    let raf = 0; let active = true;
+    const loop = () => {
+      if (!active) return;
+      const cv = canvasRef.current; const ctx = cv?.getContext('2d');
+      if (ctx) {
+        const elapsed = (typeof performance !== 'undefined' ? performance.now() : 0) - fxStartRef.current;
+        drawCombat(ctx, g, Math.max(0, 1 - elapsed / 450));
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => { active = false; cancelAnimationFrame(raf); };
   }, [g]);
 
   // ----- music by screen -----
@@ -99,13 +117,15 @@ export const App: React.FC = () => {
     musicService.play(trackForScreen(g.screen, { isBoss: g.combat?.boss, mapId: g.pos.mapId, townId: g.townId }));
   }, [g.screen, g.combat?.boss, g.pos.mapId, g.townId, musicOn]);
 
-  // ----- combat fx -> sound -----
+  // ----- combat fx -> animation timestamp + sound -----
   useEffect(() => {
     const fx = g.combat?.fx;
-    if (!fx || !soundOn) return;
+    if (!fx) return;
     const key = `${g.combat?.round}:${g.combat?.turn}:${fx.kind}:${fx.targetIdx}`;
     if (key === fxRef.current) return;
     fxRef.current = key;
+    fxStartRef.current = (typeof performance !== 'undefined' ? performance.now() : 0);
+    if (!soundOn) return;
     if (fx.kind === 'hit') soundService.play(fx.targetSide === 'party' ? 'hurt' : 'hit');
     else if (fx.kind === 'crit') soundService.play('crit');
     else if (fx.kind === 'miss') soundService.play('miss');
