@@ -240,6 +240,80 @@ console.log('Map integrity:');
   assert(unreachable === 0, 'all portals / encounters / chests reachable from each map start');
 }
 
+// 14c) Critical-path gating: terra_core is locked until the orb is returned
+console.log('Endgame gating:');
+{
+  const g2 = E.newGame();
+  const p2 = [0, 1, 2, 3, 4, 5].map(i => E.makeCharacter(i, 'P' + i, 'human', ['knight', 'sorcerer', 'cleric', 'barbarian', 'archer', 'druid'][i]));
+  for (const c of p2) { c.level = 14; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp; if (c.classId !== 'knight' && c.classId !== 'barbarian' && c.classId !== 'archer') c.spells.push('fireball', 'mass_heal', 'holy_word'); }
+  E.startAdventure(g2, p2);
+  g2.backpack.push('iron_key');
+  // stand in the crypt just before the gated stairs, door already open
+  g2.pos = { mapId: 'crypt_d1', x: 10, y: 8, dir: 2 };
+  g2.screen = 'dungeon'; g2.prevExplore = 'dungeon';
+  g2.openedDoors.push('crypt_d1:10,8');
+  // without orb_returned, stepping onto the terra portal must NOT travel
+  E.tryStep(g2, 10, 9);
+  assert(g2.pos.mapId === 'crypt_d1', 'terra_core sealed until orb returned');
+  // grant orb_returned and try again
+  g2.flags['orb_returned'] = true;
+  g2.pos = { mapId: 'crypt_d1', x: 10, y: 8, dir: 2 };
+  E.tryStep(g2, 10, 9);
+  assert(g2.pos.mapId === 'terra_core', 'terra_core opens once orb is returned');
+}
+
+// 14d) Full boss chain completes and triggers victory
+console.log('Boss chain -> victory:');
+{
+  const g3 = E.newGame();
+  const p3 = [0, 1, 2, 3, 4, 5].map(i => E.makeCharacter(i, 'H' + i, ['human', 'elf', 'human', 'dwarf', 'half-orc', 'gnome'][i], ['knight', 'sorcerer', 'cleric', 'barbarian', 'archer', 'druid'][i]));
+  for (const c of p3) {
+    c.level = 18; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp;
+    if (['sorcerer', 'cleric', 'druid'].includes(c.classId)) c.spells.push('fireball', 'meteor', 'lightning', 'mass_heal', 'holy_word', 'cure_wounds', 'bless');
+    if (c.classId === 'knight') { c.equipment.weapon = 'holy_avenger'; c.equipment.armor = 'dragon_plate'; c.equipment.shield = 'tower_shield'; }
+    else if (c.classId === 'barbarian') { c.equipment.weapon = 'great_sword'; c.equipment.armor = 'dragon_plate'; }
+    else if (c.classId === 'archer') { c.equipment.weapon = 'long_bow'; c.equipment.armor = 'chain'; }
+    else { c.equipment.weapon = c.classId === 'cleric' ? 'thunder_mace' : 'flame_sword'; }
+    c.equipment.accessory = 'amulet_might'; c.equipment.helm = 'great_helm';
+    E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp;
+  }
+  E.startAdventure(g3, p3); g3.gems = 30;
+  const smartResolve = (g: GameState) => {
+    let guard = 0;
+    while (g.combat && guard++ < 6000) {
+      const a = E.currentActor(g);
+      if (!a) break;
+      if (a.side !== 'party') break;
+      const actor = g.party[a.idx];
+      const low = g.party.filter(c => c.condition === 'ok' && c.hp > 0).sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0];
+      if (low && low.hp / low.maxHp < 0.45 && actor.spells.includes('mass_heal') && actor.sp >= 14) E.combatCast(g, 'mass_heal', -1);
+      else if (low && low.hp / low.maxHp < 0.45 && actor.spells.includes('cure_wounds') && actor.sp >= 6) E.combatCast(g, 'cure_wounds', g.party.indexOf(low));
+      else if (actor.spells.includes('meteor') && actor.sp >= 12 && g.gems >= 1) E.combatCast(g, 'meteor', -1);
+      else if (actor.spells.includes('fireball') && actor.sp >= 6) E.combatCast(g, 'fireball', -1);
+      else { const mi = E.firstAliveMonsterIdx(g); if (mi < 0) break; E.combatAttack(g, mi); }
+    }
+  };
+  const fight = (mapId: string, cell: string) => {
+    g3.prevExplore = 'dungeon'; g3.gems = 30;
+    E.startCombat(g3, `${mapId}:${cell}`, mapMap[mapId].encounters![cell], mapId);
+    smartResolve(g3);
+    if (g3.screen !== 'victory') E.restPartyFull(g3);
+  };
+  fight('sorpigal_d2', '10,7');   // lich -> orb
+  assert(g3.backpack.includes('orb_of_terra') || g3.flags['boss_dead'], 'lich defeated, orb obtained');
+  E.applyDialogAction(g3, { giveQuest: 'orb_quest' });
+  E.applyDialogAction(g3, { completeQuest: 'orb_quest' });
+  assert(g3.flags['orb_returned'], 'orb returned -> endgame unlocked');
+  fight('crypt_d1', '7,9');       // wyvern -> relic
+  assert(g3.backpack.includes('ancient_relic'), 'wyvern defeated, relic obtained');
+  g3.flags['terra_cleared'] = false; g3.flags['victory_shown'] = false;
+  g3.prevExplore = 'dungeon';
+  E.startCombat(g3, 'terra_core:4,7', mapMap['terra_core'].encounters!['4,7'], 'terra_core');
+  resolveCombat(g3, 6000);
+  assert(g3.flags['terra_cleared'], 'terra guardian defeated');
+  assert(g3.screen === 'victory', 'victory screen triggered on final boss');
+}
+
 // 15) Save round-trip shape
 console.log('Save/load shape:');
 const json = JSON.parse(JSON.stringify(g)) as GameState;

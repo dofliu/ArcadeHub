@@ -1,10 +1,10 @@
 name: mm3-isles-of-terra
 name_zh: 魔法門III — 泰拉群島
 category: personal_tools
-progress: 70
+progress: 78
 status: active
 last_updated: "2026-06-16"
-next_milestone: "戰鬥動畫(rAF漸隱)、更多區域與支線、平衡微調、角色肖像細化"
+next_milestone: "更多區域與支線、角色肖像細化、地城裝飾物與寶箱動畫、成就/結局變化"
 technologies:
   - React
   - TypeScript
