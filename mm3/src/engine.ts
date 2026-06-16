@@ -800,6 +800,17 @@ function afterPlayerAction(g: GameState) {
 }
 
 function monsterAct(g: GameState, mIdx: number) {
+  const def = monsterMap[g.combat!.monsters[mIdx].defId];
+  // action economy: bosses & huge foes strike multiple times to offset a 6-person party
+  const actions = def.boss ? 3 : def.size === 'huge' ? 2 : def.size === 'large' ? 2 : 1;
+  for (let a = 0; a < actions; a++) {
+    if (g.combat!.monsters[mIdx].hp <= 0) return;
+    if (standingParty(g).length === 0) return;
+    monsterSingleAction(g, mIdx, a);
+  }
+}
+
+function monsterSingleAction(g: GameState, mIdx: number, actionIdx = 0) {
   const c = g.combat!;
   const m = c.monsters[mIdx];
   if (m.hp <= 0) return;
@@ -809,12 +820,25 @@ function monsterAct(g: GameState, mIdx: number) {
   // afraid monsters may cower
   if (m.status.afraid && Math.random() < 0.5) { pushLog(g, `${def.name} 因恐懼而退縮。`); return; }
   const target = targets[rnd(targets.length)];
-  if (def.spellId && Math.random() < 0.4) {
+  // a monster casts at most once per turn (first action) — keeps AoE from stacking into a wipe
+  if (def.spellId && actionIdx === 0 && Math.random() < 0.45) {
     const sp = spellMap[def.spellId];
-    const dmg = sp.power + rnd(6);
-    damageChar(g, target.p, dmg, sp.element);
-    pushLog(g, `${def.name} 施放 ${sp.name}，${target.p.name} 受到 ${dmg} 傷害。`);
-    c.fx = { kind: 'spell', targetSide: 'party', targetIdx: target.i, element: sp.element, amount: dmg, ttl: 16 };
+    if (sp.target === 'allEnemies') {
+      // party-wide blast — a real threat from casters/bosses
+      let last = target.i;
+      for (const t of targets) {
+        const dmg = Math.round((sp.power + rnd(6)) * 0.6);
+        damageChar(g, t.p, dmg, sp.element);
+        last = t.i;
+      }
+      pushLog(g, `${def.name} 施放 ${sp.name}，烈焰席捲全隊！`);
+      c.fx = { kind: 'spell', targetSide: 'party', targetIdx: last, element: sp.element, amount: undefined, ttl: 18 };
+    } else {
+      const dmg = sp.power + rnd(6);
+      damageChar(g, target.p, dmg, sp.element);
+      pushLog(g, `${def.name} 施放 ${sp.name}，${target.p.name} 受到 ${dmg} 傷害。`);
+      c.fx = { kind: 'spell', targetSide: 'party', targetIdx: target.i, element: sp.element, amount: dmg, ttl: 16 };
+    }
     return;
   }
   const hit = d20();
