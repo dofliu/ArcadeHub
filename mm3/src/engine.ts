@@ -903,6 +903,7 @@ function handleBossDrop(g: GameState, bossId: string, drops: string[]) {
   if (bossId === 'lich_king') { g.flags['boss_dead'] = true; give('orb_of_terra', '🏆 巫妖王被擊敗了！你取得了泰拉星界寶珠！'); }
   else if (bossId === 'cyclops') { give('cyclops_eye', '🏆 獨眼巨人倒下了！你挖出了牠的眼珠。'); }
   else if (bossId === 'wyvern') { give('ancient_relic', '🏆 飛龍被擊敗了！古墓深處的上古遺物到手了。'); }
+  else if (bossId === 'kraken') { give('pearl_amulet', '🏆 克拉肯沉入深淵！你從牠體內取得了一顆深海珍珠。'); }
   else if (bossId === 'terra_guardian') { g.flags['terra_cleared'] = true; pushLog(g, '🏆 泰拉守護者崩解了！群島的核心終於平靜。'); }
 }
 

@@ -268,7 +268,8 @@ console.log('Boss chain -> victory:');
   const g3 = E.newGame();
   const p3 = [0, 1, 2, 3, 4, 5].map(i => E.makeCharacter(i, 'H' + i, ['human', 'elf', 'human', 'dwarf', 'half-orc', 'gnome'][i], ['knight', 'sorcerer', 'cleric', 'barbarian', 'archer', 'druid'][i]));
   for (const c of p3) {
-    c.level = 18; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp;
+    // deliberately overpowered: this test verifies endgame WIRING, not combat balance
+    c.level = 26; E.recompute(c); c.hp = c.maxHp; c.sp = c.maxSp;
     if (['sorcerer', 'cleric', 'druid'].includes(c.classId)) c.spells.push('fireball', 'meteor', 'lightning', 'mass_heal', 'holy_word', 'cure_wounds', 'bless');
     if (c.classId === 'knight') { c.equipment.weapon = 'holy_avenger'; c.equipment.armor = 'dragon_plate'; c.equipment.shield = 'tower_shield'; }
     else if (c.classId === 'barbarian') { c.equipment.weapon = 'great_sword'; c.equipment.armor = 'dragon_plate'; }

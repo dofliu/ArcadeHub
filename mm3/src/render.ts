@@ -274,13 +274,21 @@ export function drawTownScene(ctx: CanvasRenderingContext2D, townId: string) {
 // fxAlpha (0..1) fades the most recent hit/spell flash for smooth animation.
 export function drawCombat(ctx: CanvasRenderingContext2D, g: GameState, fxAlpha = 1) {
   const c = g.combat;
+  // biome-tinted backdrop from the current map's sky colour
+  const sky = (c && mapMap[c.mapId]?.skyColor) || mapMap[g.pos.mapId]?.skyColor || '#1a0a1e';
   const grad = ctx.createLinearGradient(0, 0, 0, CH);
-  grad.addColorStop(0, '#1a0a1e');
-  grad.addColorStop(1, '#06060c');
+  grad.addColorStop(0, shade(sky, 1.0));
+  grad.addColorStop(1, shade(sky, 0.28));
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, CW, CH);
+  // subtle backdrop particles (embers/dust/bubbles)
+  for (let i = 0; i < 22; i++) {
+    const px = (i * 137 + 30) % CW, py = (i * 79 + 40) % Math.floor(CH * 0.85);
+    ctx.fillStyle = `rgba(255,255,255,${0.04 + (i % 4) * 0.02})`;
+    ctx.fillRect(px, py, 2, 2);
+  }
   // ground
-  ctx.fillStyle = 'rgba(40,30,50,0.6)';
+  ctx.fillStyle = 'rgba(20,16,28,0.55)';
   ctx.beginPath(); ctx.ellipse(CX, CH * 0.82, CW * 0.5, CH * 0.18, 0, 0, Math.PI * 2); ctx.fill();
   if (!c) return;
   const n = c.monsters.length;
@@ -369,7 +377,7 @@ function drawMonsterSprite(ctx: CanvasRenderingContext2D, def: MonsterDef, x: nu
     case 'rat': body(sz, sz * 0.7); ctx.fillStyle = c2; ctx.beginPath(); ctx.ellipse(x, y - sz * 0.5, sz * 0.4, sz * 0.4, 0, 0, Math.PI * 2); ctx.fill(); eyes(sz * 0.25, sz * 0.45, 2.5); ctx.strokeStyle = c2; ctx.beginPath(); ctx.moveTo(x + sz, y); ctx.quadraticCurveTo(x + sz * 1.5, y + sz * 0.4, x + sz * 1.3, y + sz); ctx.stroke(); break;
     case 'spider': ctx.strokeStyle = c1; ctx.lineWidth = 2; for (let a = 0; a < 4; a++) { const ang = 0.5 + a * 0.4; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - Math.cos(ang) * sz * 1.5, y + Math.sin(ang) * sz); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(ang) * sz * 1.5, y + Math.sin(ang) * sz); ctx.stroke(); } body(sz * 0.8, sz * 0.7); eyes(sz * 0.3, sz * 0.1, 2.5); break;
     case 'wolf': body(sz, sz * 0.7); ctx.fillStyle = c1; ctx.beginPath(); ctx.moveTo(x + sz * 0.7, y - sz * 0.4); ctx.lineTo(x + sz * 1.4, y - sz * 0.2); ctx.lineTo(x + sz * 0.9, y + sz * 0.2); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x + sz * 1.05, y - sz * 0.25, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = c2; ctx.beginPath(); ctx.moveTo(x - sz * 0.5, y - sz * 0.6); ctx.lineTo(x - sz * 0.3, y - sz); ctx.lineTo(x - sz * 0.1, y - sz * 0.6); ctx.fill(); break;
-    case 'snake': ctx.strokeStyle = c1; ctx.lineWidth = sz * 0.5; ctx.beginPath(); ctx.moveTo(x - sz, y + sz); ctx.quadraticCurveTo(x + sz, y, x - sz * 0.5, y - sz * 0.5); ctx.quadraticCurveTo(x - sz * 1.2, y - sz, x + sz * 0.3, y - sz * 1.2); ctx.stroke(); ctx.lineWidth = 1.5; ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(x + sz * 0.3, y - sz * 1.2, sz * 0.35, 0, Math.PI * 2); ctx.fill(); eyes(sz * 0.12, sz * 1.3, 1.8); break;
+    case 'snake': case 'serpent': ctx.strokeStyle = c1; ctx.lineWidth = sz * 0.5; ctx.beginPath(); ctx.moveTo(x - sz, y + sz); ctx.quadraticCurveTo(x + sz, y, x - sz * 0.5, y - sz * 0.5); ctx.quadraticCurveTo(x - sz * 1.2, y - sz, x + sz * 0.3, y - sz * 1.2); ctx.stroke(); ctx.lineWidth = 1.5; ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(x + sz * 0.3, y - sz * 1.2, sz * 0.35, 0, Math.PI * 2); ctx.fill(); eyes(sz * 0.12, sz * 1.3, 1.8); break;
     case 'kobold': case 'goblin': case 'orc': case 'bandit': {
       body(sz * 0.8, sz); // body
       ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(x, y - sz * 0.8, sz * 0.55, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -433,6 +441,60 @@ function drawMonsterSprite(ctx: CanvasRenderingContext2D, def: MonsterDef, x: nu
       // staff
       ctx.strokeStyle = '#5a189a'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x + sz * 0.8, y - sz); ctx.lineTo(x + sz * 0.8, y + sz); ctx.stroke();
       ctx.fillStyle = '#9d4edd'; ctx.beginPath(); ctx.arc(x + sz * 0.8, y - sz * 1.1, sz * 0.18, 0, Math.PI * 2); ctx.fill();
+      break;
+    }
+    case 'harpy': {
+      // winged bird-woman
+      ctx.fillStyle = c2 || c1;
+      ctx.beginPath(); ctx.moveTo(x - sz * 0.3, y - sz * 0.2); ctx.lineTo(x - sz * 1.5, y - sz * 0.8); ctx.lineTo(x - sz * 1.3, y + sz * 0.2); ctx.lineTo(x - sz * 0.3, y + sz * 0.3); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + sz * 0.3, y - sz * 0.2); ctx.lineTo(x + sz * 1.5, y - sz * 0.8); ctx.lineTo(x + sz * 1.3, y + sz * 0.2); ctx.lineTo(x + sz * 0.3, y + sz * 0.3); ctx.fill();
+      body(sz * 0.45, sz * 0.85);
+      ctx.fillStyle = '#e6c6a8'; ctx.beginPath(); ctx.arc(x, y - sz * 0.7, sz * 0.32, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      eyes(sz * 0.13, sz * 0.72, 2.2);
+      ctx.fillStyle = '#e8b84a'; ctx.beginPath(); ctx.moveTo(x, y - sz * 0.6); ctx.lineTo(x + sz * 0.18, y - sz * 0.5); ctx.lineTo(x, y - sz * 0.42); ctx.fill();
+      break;
+    }
+    case 'troll': {
+      body(sz * 0.95, sz * 1.1); ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(x, y - sz * 0.85, sz * 0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      eyes(sz * 0.2, sz * 0.85, 2.6);
+      // big lower jaw + tusks
+      ctx.fillStyle = c2 || c1; ctx.fillRect(x - sz * 0.3, y - sz * 0.6, sz * 0.6, sz * 0.2);
+      ctx.fillStyle = '#f0ead6'; ctx.beginPath(); ctx.moveTo(x - sz * 0.22, y - sz * 0.42); ctx.lineTo(x - sz * 0.16, y - sz * 0.62); ctx.lineTo(x - sz * 0.1, y - sz * 0.42); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + sz * 0.22, y - sz * 0.42); ctx.lineTo(x + sz * 0.16, y - sz * 0.62); ctx.lineTo(x + sz * 0.1, y - sz * 0.42); ctx.fill();
+      // long arms + claws
+      ctx.strokeStyle = c1; ctx.lineWidth = sz * 0.28; ctx.beginPath(); ctx.moveTo(x - sz * 0.7, y - sz * 0.1); ctx.lineTo(x - sz * 0.95, y + sz); ctx.moveTo(x + sz * 0.7, y - sz * 0.1); ctx.lineTo(x + sz * 0.95, y + sz); ctx.stroke();
+      break;
+    }
+    case 'dragon': {
+      // wings
+      ctx.fillStyle = c2 || shade(c1, 0.7);
+      ctx.beginPath(); ctx.moveTo(x - sz * 0.2, y - sz * 0.4); ctx.lineTo(x - sz * 1.7, y - sz * 1.1); ctx.lineTo(x - sz * 1.5, y + sz * 0.1); ctx.lineTo(x - sz * 0.3, y + sz * 0.2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x + sz * 0.2, y - sz * 0.4); ctx.lineTo(x + sz * 1.7, y - sz * 1.1); ctx.lineTo(x + sz * 1.5, y + sz * 0.1); ctx.lineTo(x + sz * 0.3, y + sz * 0.2); ctx.fill();
+      body(sz * 0.6, sz * 0.9);
+      // neck + head
+      ctx.strokeStyle = c1; ctx.lineWidth = sz * 0.4; ctx.beginPath(); ctx.moveTo(x, y - sz * 0.5); ctx.quadraticCurveTo(x + sz * 0.5, y - sz * 1.2, x + sz * 0.9, y - sz * 1.1); ctx.stroke();
+      ctx.fillStyle = c1; ctx.beginPath(); ctx.ellipse(x + sz * 1.0, y - sz * 1.05, sz * 0.35, sz * 0.25, 0.3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffd24a'; ctx.beginPath(); ctx.arc(x + sz * 0.95, y - sz * 1.12, 2.4, 0, Math.PI * 2); ctx.fill();
+      // horns
+      ctx.fillStyle = '#e9e2d0'; ctx.beginPath(); ctx.moveTo(x + sz * 1.1, y - sz * 1.25); ctx.lineTo(x + sz * 1.25, y - sz * 1.5); ctx.lineTo(x + sz * 1.2, y - sz * 1.2); ctx.fill();
+      break;
+    }
+    case 'kraken': {
+      // bulbous head
+      ctx.fillStyle = c1; ctx.beginPath(); ctx.ellipse(x, y - sz * 0.4, sz * 0.85, sz * 1.0, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      // tentacles
+      ctx.strokeStyle = c1; ctx.lineWidth = sz * 0.22; ctx.lineCap = 'round';
+      for (let t = -3; t <= 3; t++) {
+        if (t === 0) continue;
+        const bx = x + t * sz * 0.22;
+        ctx.beginPath(); ctx.moveTo(bx, y + sz * 0.4);
+        ctx.quadraticCurveTo(bx + t * sz * 0.3, y + sz * 1.0, bx + t * sz * 0.55, y + sz * 1.5);
+        ctx.stroke();
+      }
+      ctx.lineCap = 'butt';
+      // glowing eyes
+      ctx.fillStyle = c2 || '#7c5cff'; ctx.beginPath(); ctx.arc(x - sz * 0.3, y - sz * 0.5, sz * 0.16, 0, Math.PI * 2); ctx.arc(x + sz * 0.3, y - sz * 0.5, sz * 0.16, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0b0b12'; ctx.beginPath(); ctx.arc(x - sz * 0.3, y - sz * 0.5, sz * 0.06, 0, Math.PI * 2); ctx.arc(x + sz * 0.3, y - sz * 0.5, sz * 0.06, 0, Math.PI * 2); ctx.fill();
       break;
     }
     default: body(sz * 0.8, sz); eyes(sz * 0.25, sz * 0.2, 3); break;

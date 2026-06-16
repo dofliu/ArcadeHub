@@ -57,6 +57,11 @@ function trial(lvl: number, mapId: string, cell: string, N = 200) {
 }
 
 const rows: [string, number, string, string][] = [
+  ['L4 vs sea-cave sahuagin', 4, 'sea_caves', '3,3'],
+  ['L5 vs sea serpent+sahuagin', 5, 'sea_caves', '3,8'],
+  ['L6 vs dragon whelp', 6, 'sea_caves', '6,9'],
+  ['L7 vs troll', 7, 'sea_caves', '9,6'],
+  ['L9 vs Kraken (boss)', 9, 'sea_caves', '9,9'],
   ['L1 vs cyclops-cave ogres', 1, 'cyclops_cave', '6,5'],
   ['L1 vs crypt wraiths', 1, 'crypt_d1', '8,5'],
   ['L4 vs cyclops-cave ogres', 4, 'cyclops_cave', '6,5'],

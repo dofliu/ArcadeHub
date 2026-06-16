@@ -76,6 +76,9 @@ export const ITEMS: ItemDef[] = [
   { id: 'frost_brand',   name: '霜寒之刃', nameEn: 'Frost Brand', type: 'weapon', slot: 'weapon', dmg: [4, 11], atkBonus: 3, value: 650, element: 'cold',     desc: '散發寒氣的魔劍。' },
   { id: 'thunder_mace',  name: '雷霆聖錘', nameEn: 'Thunder Mace',type: 'weapon', slot: 'weapon', dmg: [5, 12], atkBonus: 4, value: 800, element: 'electric', desc: '蘊含雷電的神聖鈍器。' },
   { id: 'holy_avenger',  name: '聖光復仇者',nameEn: 'Holy Avenger',type: 'weapon', slot: 'weapon', dmg: [6, 14], atkBonus: 5, value: 1500, element: 'holy', attrBonus: { might: 2 }, desc: '傳說中的聖騎士之劍。' },
+  { id: 'trident',       name: '三叉戟',  nameEn: 'Trident',     type: 'weapon', slot: 'weapon', dmg: [4, 10], atkBonus: 2, value: 220, desc: '海濱戰士慣用的三叉長戟。' },
+  { id: 'war_bow',       name: '戰弓',    nameEn: 'War Bow',     type: 'weapon', slot: 'weapon', dmg: [4, 11], atkBonus: 3, value: 420, ranged: true, desc: '射程驚人的複合戰弓。' },
+  { id: 'tidecaller',    name: '潮汐之杖',nameEn: 'Tidecaller',  type: 'weapon', slot: 'weapon', dmg: [3, 8],  atkBonus: 3, value: 700, element: 'cold', attrBonus: { intellect: 2 }, desc: '凝聚海洋寒力的法杖。' },
   // ---- armor (light) ----
   { id: 'cloth',         name: '布衣',   nameEn: 'Cloth',         type: 'armor', slot: 'armor', acBonus: 1,  value: 5,   weight: 'light',  desc: '聊勝於無。' },
   { id: 'robe',          name: '法師長袍', nameEn: 'Mage Robe',   type: 'armor', slot: 'armor', acBonus: 2,  value: 50,  weight: 'light', attrBonus: { intellect: 1 }, desc: '繡有符文的施法者長袍。' },
@@ -84,12 +87,14 @@ export const ITEMS: ItemDef[] = [
   { id: 'studded',       name: '鉚釘皮甲', nameEn: 'Studded Leather', type: 'armor', slot: 'armor', acBonus: 5, value: 75, weight: 'medium', desc: '鑲嵌金屬鉚釘的皮甲。' },
   { id: 'chain',         name: '鎖子甲', nameEn: 'Chain Mail',    type: 'armor', slot: 'armor', acBonus: 6,  value: 120, weight: 'medium', desc: '環環相扣的金屬甲。' },
   // ---- armor (heavy) ----
+  { id: 'scale_mail',    name: '魚鱗甲', nameEn: 'Scale Mail',    type: 'armor', slot: 'armor', acBonus: 7,  value: 180, weight: 'medium', resist: { cold: 15 }, desc: '以海獸鱗片打造的護甲。' },
   { id: 'splint',        name: '鱗甲',   nameEn: 'Splint Mail',   type: 'armor', slot: 'armor', acBonus: 8,  value: 250, weight: 'heavy',  desc: '條狀鋼板拼接的護甲。' },
   { id: 'plate',         name: '板甲',   nameEn: 'Plate Mail',    type: 'armor', slot: 'armor', acBonus: 10, value: 400, weight: 'heavy',  desc: '最堅固的全身板甲。' },
   { id: 'dragon_plate',  name: '龍鱗板甲', nameEn: 'Dragon Plate',type: 'armor', slot: 'armor', acBonus: 14, value: 1200, weight: 'heavy', resist: { fire: 30 }, desc: '以龍鱗鍛造的傳奇護甲。' },
   // ---- shields ----
   { id: 'buckler',       name: '圓盾',   nameEn: 'Buckler',       type: 'shield', slot: 'shield', acBonus: 1, value: 20,  desc: '小型手盾。' },
   { id: 'kite_shield',   name: '鳶盾',   nameEn: 'Kite Shield',   type: 'shield', slot: 'shield', acBonus: 3, value: 80,  desc: '大型防護盾。' },
+  { id: 'coral_shield',  name: '珊瑚盾', nameEn: 'Coral Shield',  type: 'shield', slot: 'shield', acBonus: 4, value: 150, resist: { fire: 15 }, desc: '堅硬珊瑚鑲嵌的圓盾。' },
   { id: 'tower_shield',  name: '塔盾',   nameEn: 'Tower Shield',  type: 'shield', slot: 'shield', acBonus: 5, value: 220, desc: '幾乎遮蔽全身的巨盾。' },
   // ---- helms ----
   { id: 'leather_cap',   name: '皮帽',   nameEn: 'Leather Cap',   type: 'helm', slot: 'helm', acBonus: 1, value: 15,  desc: '簡單的頭部護具。' },
@@ -106,6 +111,7 @@ export const ITEMS: ItemDef[] = [
   { id: 'amulet_might',    name: '力量護符', nameEn: 'Amulet of Might',    type: 'accessory', slot: 'accessory', atkBonus: 2, attrBonus: { might: 1 }, value: 250, desc: '增強持有者的攻擊。' },
   { id: 'ring_wizardry',   name: '巫術指環', nameEn: 'Ring of Wizardry',   type: 'accessory', slot: 'accessory', attrBonus: { intellect: 2 }, value: 400, desc: '提升法力與智識。' },
   { id: 'amulet_life',     name: '生命護符', nameEn: 'Amulet of Life',     type: 'accessory', slot: 'accessory', attrBonus: { endurance: 2 }, value: 400, desc: '強化持有者的生命力。' },
+  { id: 'pearl_amulet',    name: '深海珍珠', nameEn: 'Pearl Amulet',       type: 'accessory', slot: 'accessory', acBonus: 1, attrBonus: { luck: 2, personality: 1 }, resist: { cold: 20 }, value: 500, desc: '克拉肯體內孕育的巨大珍珠。' },
   // ---- consumables ----
   { id: 'healing_potion',  name: '治療藥水', nameEn: 'Healing Potion',  type: 'consumable', heal: 30,  value: 25,  desc: '恢復 30 點生命。' },
   { id: 'greater_healing', name: '高級治療藥水', nameEn: 'Greater Healing Potion', type: 'consumable', heal: 70, value: 80, desc: '恢復 70 點生命。' },
@@ -148,6 +154,13 @@ export const MONSTERS: MonsterDef[] = [
   { id: 'fire_imp',    name: '火焰小鬼', nameEn: 'Fire Imp',  hp: 32,  ac: 6,  attack: 6,  dmg: [4, 9],   speed: 14, xp: 90,  gold: [10, 20],  family: 'demon', resist: { fire: 100 }, spellId: 'flame_arrow', color: '#e63946', sprite: 'imp', desc: '吐火的小型惡魔。' },
   { id: 'gargoyle',    name: '石像鬼', nameEn: 'Gargoyle',    hp: 72,  ac: 9,  attack: 8,  dmg: [7, 14],  speed: 9,  xp: 150, gold: [15, 30],  family: 'construct', resist: { fire: 30, cold: 30, electric: 30 }, color: '#6c757d', sprite: 'gargoyle', desc: '從石牆甦醒的守護者。' },
   { id: 'stone_golem', name: '石魔像', nameEn: 'Stone Golem', hp: 140, ac: 10, attack: 10, dmg: [10, 19], speed: 5,  xp: 280, gold: [0, 0],    gems: [1, 3], family: 'construct', resist: { fire: 50, cold: 50, electric: 50, poison: 100 }, size: 'large', color: '#adb5bd', sprite: 'golem', desc: '不知疲倦的石造守衛。' },
+  // ---- coastal / Baywatch tier ----
+  { id: 'sahuagin',    name: '魚人',   nameEn: 'Sahuagin',    hp: 32,  ac: 6,  attack: 6,  dmg: [5, 10],  speed: 12, xp: 80,  gold: [8, 20],   family: 'humanoid', color: '#2a7d6f', sprite: 'orc',    desc: '潛伏淺灘的鱗甲掠食者。' },
+  { id: 'harpy',       name: '鷹身女妖', nameEn: 'Harpy',     hp: 40,  ac: 8,  attack: 7,  dmg: [5, 11],  speed: 15, xp: 115, gold: [10, 25],  family: 'beast', inflicts: { status: 'afraid', chance: 0.3, rounds: 3 }, color: '#a0763b', color2: '#d4a35a', sprite: 'harpy', desc: '尖嘯震懾人心的半鳥怪物。' },
+  { id: 'sea_serpent', name: '海蛇',   nameEn: 'Sea Serpent', hp: 76,  ac: 8,  attack: 8,  dmg: [8, 15],  speed: 11, xp: 175, gold: [12, 30],  family: 'beast', inflicts: { status: 'poisoned', chance: 0.5, rounds: 5 }, color: '#1d6b7d', color2: '#3aa0c0', sprite: 'serpent', desc: '盤踞海蝕洞的巨大海蛇。' },
+  { id: 'troll',       name: '巨魔',   nameEn: 'Troll',       hp: 120, ac: 8,  attack: 9,  dmg: [10, 19], speed: 8,  xp: 230, gold: [20, 45],  family: 'humanoid', size: 'large', color: '#6b8e4e', color2: '#9caf6a', sprite: 'troll', desc: '再生不息的綠皮巨怪。' },
+  { id: 'dragon_whelp',name: '幼龍',   nameEn: 'Dragon Whelp', hp: 140, ac: 10, attack: 10, dmg: [10, 20], speed: 13, xp: 300, gold: [40, 90], gems: [1, 3], family: 'dragon', resist: { fire: 60 }, spellId: 'flame_arrow', size: 'large', color: '#b5341f', color2: '#e8902a', sprite: 'dragon', desc: '噴吐火焰的年輕巨龍。' },
+  { id: 'kraken',      name: '克拉肯', nameEn: 'Kraken',      hp: 620, ac: 11, attack: 12, dmg: [16, 30], speed: 9, xp: 1300, gold: [250, 450], gems: [5, 12], spellId: 'frostbite', family: 'aberration', resist: { cold: 40, poison: 100 }, inflicts: { status: 'paralyzed', chance: 0.25, rounds: 2 }, boss: true, size: 'huge', color: '#3d2b6b', color2: '#7c5cff', sprite: 'kraken', desc: '海蝕洞最深處的遠古海妖，觸手能絞碎艦船。' },
   // ---- big / boss-tier ----
   { id: 'cyclops',     name: '獨眼巨人', nameEn: 'Cyclops',   hp: 280, ac: 9,  attack: 11, dmg: [14, 28], speed: 7,  xp: 520, gold: [60, 120], gems: [1, 4], family: 'humanoid', size: 'huge', boss: true, color: '#9c6644', color2: '#e9c46a', sprite: 'cyclops', desc: '盤踞巨人洞窟的獨眼霸主。' },
   { id: 'wyvern',      name: '飛龍',   nameEn: 'Wyvern',      hp: 240, ac: 10, attack: 11, dmg: [12, 24], speed: 15, xp: 500, gold: [40, 90],  gems: [1, 3], family: 'dragon', resist: { poison: 100 }, inflicts: { status: 'poisoned', chance: 0.55, rounds: 5 }, size: 'large', color: '#2a9d8f', sprite: 'wyvern', desc: '毒尾翔空的亞龍。' },
@@ -189,9 +202,11 @@ export const MAPS: TileMap[] = [
       '1,12':  { toMap: 'overworld', to: { x: 1, y: 12 }, toScreen: 'town', town: 'sorpigal', label: '索皮加城' },
       '10,2':  { toMap: 'overworld', to: { x: 10, y: 2 }, toScreen: 'town', town: 'fountainhead', label: '泉源鎮' },
       '17,13': { toMap: 'overworld', to: { x: 17, y: 13 }, toScreen: 'town', town: 'wildabar', label: '荒野堡' },
+      '2,9':   { toMap: 'overworld', to: { x: 2, y: 9 }, toScreen: 'town', town: 'baywatch', label: '灣望鎮' },
       '5,4':   { toMap: 'sorpigal_d1', to: { x: 1, y: 1, dir: 1 }, label: '索皮加地城' },
       '16,3':  { toMap: 'cyclops_cave', to: { x: 1, y: 1, dir: 1 }, label: '巨人洞窟' },
       '17,10': { toMap: 'crypt_d1', to: { x: 1, y: 1, dir: 1 }, label: '荒野古墓' },
+      '7,8':   { toMap: 'sea_caves', to: { x: 1, y: 1, dir: 1 }, label: '海蝕洞' },
     },
     encounters: {
       '8,5':   { monsters: [{ id: 'goblin', count: [1, 2] }, { id: 'kobold', count: [1, 2] }] },
@@ -203,6 +218,7 @@ export const MAPS: TileMap[] = [
       '4,4': '路牌：← 索皮加城　此處 地城入口',
       '11,2': '路牌：泉源鎮就在西方。',
       '16,11': '路牌：↓ 荒野堡　古墓在北方。',
+      '4,9': '路牌：← 灣望鎮　海蝕洞在海灣旁。',
     },
     events: {
       '12,3': { onceFlag: 'shrine_might', text: '一座古老的神龕。你感到力量湧入體內！', attrBoost: { attr: 'might', amount: 1 }, healParty: true },
@@ -363,6 +379,47 @@ export const MAPS: TileMap[] = [
       '10,9': { toMap: 'terra_core', to: { x: 1, y: 1, dir: 1 }, label: '通往泰拉核心', needFlag: 'orb_returned' },
     },
   },
+  // ===== Sea Caves (Baywatch) =====
+  {
+    id: 'sea_caves',
+    name: '海蝕洞',
+    nameEn: 'Sea Caves',
+    kind: 'dungeon',
+    level: 5,
+    skyColor: '#0a2030',
+    grid: [
+      '############',
+      '#S...##....#',
+      '#....##....#',
+      '#..........#',
+      '#.##....##.#',
+      '#.##....##.#',
+      '#..........#',
+      '#....##....#',
+      '#....##....#',
+      '#..........#',
+      '#..........#',
+      '############',
+    ],
+    start: { x: 1, y: 1, dir: 1 },
+    chests: {
+      '10,1':  { gold: [40, 90], items: ['trident'] },
+      '1,9':   { gold: [50, 110], items: ['scale_mail', 'coral_shield'] },
+      '6,3':   { gold: [30, 70], items: ['sea_chart'], trapped: true, trapDmg: [8, 16] },
+      '10,10': { gold: [80, 160], gems: [1, 3], items: ['war_bow', 'tidecaller'] },
+    },
+    encounters: {
+      '3,3':  { monsters: [{ id: 'sahuagin', count: [2, 3] }] },
+      '8,3':  { monsters: [{ id: 'harpy', count: [1, 2] }] },
+      '3,8':  { monsters: [{ id: 'sea_serpent', count: [1, 1] }, { id: 'sahuagin', count: [1, 2] }] },
+      '9,6':  { monsters: [{ id: 'troll', count: [1, 1] }] },
+      '6,9':  { monsters: [{ id: 'dragon_whelp', count: [1, 1] }] },
+      '9,9':  { monsters: [{ id: 'kraken', count: [1, 1] }], once: true, boss: true },
+    },
+    portals: {
+      '1,1': { toMap: 'overworld', to: { x: 7, y: 9, dir: 2 }, label: '離開海蝕洞' },
+    },
+  },
   // ===== Terra Core (final) =====
   {
     id: 'terra_core',
@@ -423,6 +480,14 @@ export const TOWNS: TownDef[] = [
       { id: 'temple_fh', kind: 'temple' }, { id: 'inn_fh', kind: 'inn' }, { id: 'training_fh', kind: 'training' },
     ],
     npcs: ['scholar', 'fountain_keeper'],
+  },
+  {
+    id: 'baywatch', name: '灣望鎮', nameEn: 'Baywatch', blurb: '潮聲環繞、漁火點點的海岸港鎮。',
+    buildings: [
+      { id: 'bay_goods', kind: 'shop' }, { id: 'bay_magic', kind: 'shop' },
+      { id: 'temple_bay', kind: 'temple' }, { id: 'inn_bay', kind: 'inn' }, { id: 'training_bay', kind: 'training' },
+    ],
+    npcs: ['harbormaster', 'sailor'],
   },
   {
     id: 'wildabar', name: '荒野堡', nameEn: 'Wildabar', blurb: '沙漠邊緣的傭兵與冒險者之城。',
@@ -593,6 +658,29 @@ export const NPCS: NPCDef[] = [
       start: { id: 'start', text: '「荒野古墓就在城外東南。沒有鐵鑰匙可進不了深處的墓室——那鑰匙就在古墓上層的寶箱裡。」', options: [{ label: '多謝提醒', action: { end: true } }] },
     },
   },
+  // ----- Baywatch -----
+  {
+    id: 'harbormaster', name: '港務長 瑪琳', nameEn: 'Harbormaster Marin', root: 'start',
+    entries: [
+      { cond: { questComplete: 'sea_charts' }, node: 'done' },
+      { cond: { questActive: 'sea_charts', item: 'sea_chart' }, node: 'reward' },
+      { cond: { questActive: 'sea_charts' }, node: 'reminder' },
+    ],
+    nodes: {
+      start: { id: 'start', text: '「海蝕洞裡有張古老的『航海圖』，能指引穿越群島暗礁的航線。但洞裡盤踞著克拉肯…你敢去取回它嗎？」', options: [{ label: '我去取回', to: 'accept', action: { giveQuest: 'sea_charts' } }, { label: '克拉肯是什麼？', to: 'lore' }, { label: '太冒險了', action: { end: true } }] },
+      lore: { id: 'lore', text: '「遠古的海妖，觸手能絞碎艦船。牠盤據在海蝕洞最深處。航海圖就藏在洞中的寶箱裡，未必要正面對上牠——但要小心。」', options: [{ label: '我去取回', to: 'accept', action: { giveQuest: 'sea_charts' } }, { label: '離開', action: { end: true } }] },
+      accept: { id: 'accept', text: '「海蝕洞的入口在城外的海灣旁。願潮水眷顧你。」', options: [{ label: '出發', action: { end: true } }] },
+      reminder: { id: 'reminder', text: '「航海圖還在海蝕洞裡。那入口就在海灣邊。」', options: [{ label: '我會帶回來', action: { end: true } }] },
+      reward: { id: 'reward', text: '「這就是航海圖！有了它，商船終於能安全往來。這把戰弓贈予你，英雄。」', options: [{ label: '領取獎賞', action: { completeQuest: 'sea_charts', giveItem: 'war_bow', end: true } }] },
+      done: { id: 'done', text: '「託你的福，灣望鎮的漁船又能出海了。」', options: [{ label: '離開', action: { end: true } }] },
+    },
+  },
+  {
+    id: 'sailor', name: '老水手 庫克', nameEn: 'Cook the Sailor', root: 'start',
+    nodes: {
+      start: { id: 'start', text: '「小子，海蝕洞裡可不只有克拉肯。魚人成群、巨魔再生、還有噴火的幼龍。多備點解毒劑和治療法術，準沒錯。」', options: [{ label: '受教了', action: { end: true } }] },
+    },
+  },
 ];
 
 export const QUESTS: QuestDef[] = [
@@ -602,6 +690,7 @@ export const QUESTS: QuestDef[] = [
   { id: 'lost_tome', name: '失落的法典', nameEn: 'The Lost Tome', giver: 'mage_apprentice', itemRequired: 'arcane_tome', desc: '為法師學徒費歐尋回遺落的奧術法典。', hint: '奧術法典在索皮加地城深層的寶箱中。', rewardGold: 200, rewardXp: 160 },
   { id: 'cyclops_bounty', name: '獨眼巨人懸賞', nameEn: 'Cyclops Bounty', giver: 'jeweler', itemRequired: 'cyclops_eye', desc: '擊敗巨人洞窟的獨眼巨人，取回牠的眼珠。', hint: '巨人洞窟在群島東北方。', rewardGold: 400, rewardXp: 350, rewardItem: 'amulet_might' },
   { id: 'ancient_lore', name: '上古遺物', nameEn: 'Ancient Lore', giver: 'scholar', itemRequired: 'ancient_relic', desc: '為學者阿芮亞尋回荒野古墓中的上古遺物。', hint: '上古遺物在荒野古墓，需擊敗飛龍。', rewardGold: 350, rewardXp: 300, main: true },
+  { id: 'sea_charts', name: '失落的航海圖', nameEn: 'The Lost Charts', giver: 'harbormaster', itemRequired: 'sea_chart', desc: '從海蝕洞取回古老的航海圖。', hint: '航海圖在海蝕洞的寶箱中（海灣旁入口）。', rewardGold: 300, rewardXp: 280, rewardItem: 'war_bow' },
 ];
 
 // ---------- Shops ----------
@@ -619,6 +708,12 @@ export const SHOPS: ShopDef[] = [
   { id: 'temple_fh', name: '泉源神殿', nameEn: 'Fountain Temple', kind: 'temple', town: 'fountainhead', stock: [], healCost: 50 },
   { id: 'inn_fh', name: '泉源旅店', nameEn: 'Fountain Inn', kind: 'inn', town: 'fountainhead', stock: [], restCost: 0 },
   { id: 'training_fh', name: '泉源訓練場', nameEn: 'Fountain Training', kind: 'training', town: 'fountainhead', stock: [] },
+  // Baywatch
+  { id: 'bay_goods', name: '灣望商行', nameEn: 'Baywatch Goods', kind: 'goods', town: 'baywatch', stock: ['trident', 'war_bow', 'spear', 'scale_mail', 'coral_shield', 'leather_boots', 'ration'] },
+  { id: 'bay_magic', name: '灣望法器行', nameEn: 'Baywatch Arcana', kind: 'magic', town: 'baywatch', stock: ['tidecaller', 'greater_healing', 'mana_potion', 'antidote', 'elixir'], spells: ['frostbite', 'cone_cold', 'haste', 'shield_spell', 'cure_poison', 'protection', 'paralyze'] },
+  { id: 'temple_bay', name: '灣望神殿', nameEn: 'Baywatch Temple', kind: 'temple', town: 'baywatch', stock: [], healCost: 45 },
+  { id: 'inn_bay', name: '灣望旅店', nameEn: 'Baywatch Inn', kind: 'inn', town: 'baywatch', stock: [], restCost: 0 },
+  { id: 'training_bay', name: '灣望訓練場', nameEn: 'Baywatch Training', kind: 'training', town: 'baywatch', stock: [] },
   // Wildabar
   { id: 'wb_smith', name: '荒野武器庫', nameEn: 'Wildabar Arms', kind: 'goods', town: 'wildabar', stock: ['great_sword', 'long_bow', 'flame_sword', 'frost_brand', 'thunder_mace'] },
   { id: 'wb_armor', name: '荒野防具行', nameEn: 'Wildabar Armor', kind: 'goods', town: 'wildabar', stock: ['plate', 'dragon_plate', 'tower_shield', 'great_helm', 'cloak_shadow', 'boots_speed', 'ring_wizardry', 'amulet_might'] },
