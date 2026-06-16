@@ -11,6 +11,8 @@ export type Screen =
   | 'shop'
   | 'sheet'
   | 'quests'
+  | 'rest'
+  | 'cast'
   | 'victory'
   | 'gameover';
 
@@ -28,15 +30,40 @@ export type AttrKey =
 
 export type Attrs = Record<AttrKey, number>;
 
+export type Gender = 'male' | 'female';
+export type Alignment = 'good' | 'neutral' | 'evil';
+
+// schools: sorcerer (arcane), cleric (divine), both (druid), null (non-caster)
 export type SpellSchool = 'sorcerer' | 'cleric';
-export type EquipSlot = 'weapon' | 'armor' | 'shield' | 'helm' | 'accessory';
-export type ItemType = 'weapon' | 'armor' | 'shield' | 'helm' | 'accessory' | 'consumable' | 'quest';
+export type CastSchool = SpellSchool | 'both' | null;
+export type Element = 'fire' | 'cold' | 'electric' | 'poison' | 'energy' | 'magic' | 'holy';
+
+export type EquipSlot = 'weapon' | 'armor' | 'shield' | 'helm' | 'accessory' | 'cloak' | 'boots';
+export type ItemType = 'weapon' | 'armor' | 'shield' | 'helm' | 'accessory' | 'cloak' | 'boots' | 'consumable' | 'quest';
+
+// transient status afflictions (value = rounds remaining; -1 = persists until cured/rest)
+export type StatusEffect =
+  | 'asleep'
+  | 'afraid'
+  | 'poisoned'
+  | 'paralyzed'
+  | 'cursed'
+  | 'diseased'
+  | 'blessed'
+  | 'shielded'
+  | 'hasted';
+
+export type LifeState = 'ok' | 'unconscious' | 'dead';
+
+// armor weight class for class restrictions
+export type ArmorWeight = 'light' | 'medium' | 'heavy';
 
 export interface Race {
   id: string;
   name: string;
   nameEn: string;
   mods: Partial<Attrs>;
+  resist?: Partial<Record<Element, number>>;
   desc: string;
 }
 
@@ -46,11 +73,15 @@ export interface ClassDef {
   nameEn: string;
   hitDie: number;       // HP per level contribution
   spDie: number;        // SP per level (0 = non-caster)
-  school: SpellSchool | null;
+  school: CastSchool;
   baseAttack: number;   // to-hit bonus growth
   startSpells: string[];
   desc: string;
   primary: AttrKey;     // key attribute
+  maxArmor: ArmorWeight;     // heaviest armor wearable
+  canShield: boolean;
+  critMult: number;     // crit chance helper (robber/ninja high)
+  alignReq?: Alignment; // some classes restricted (none in our roster, reserved)
 }
 
 export interface Spell {
@@ -60,11 +91,15 @@ export interface Spell {
   school: SpellSchool;
   level: number;
   cost: number;
+  gemCost?: number;     // some powerful spells also cost gems
   target: 'enemy' | 'allEnemies' | 'ally' | 'party' | 'self';
-  kind: 'damage' | 'heal' | 'buffAtk' | 'buffAc' | 'cureDead' | 'light' | 'sleep';
+  kind: 'damage' | 'heal' | 'buffAtk' | 'buffAc' | 'cureDead' | 'cureStatus' | 'light'
+      | 'sleep' | 'fear' | 'poison' | 'paralyze' | 'haste' | 'shield' | 'bless'
+      | 'town_portal' | 'fly' | 'lloyd';
   power: number;
-  element?: 'fire' | 'cold' | 'shock' | 'holy';
+  element?: Element;
   usableOutside: boolean;
+  usableInside?: boolean; // some spells only outside (false default = both unless overridden)
   desc: string;
 }
 
@@ -79,8 +114,16 @@ export interface ItemDef {
   acBonus?: number;
   value: number;
   twoHanded?: boolean;
+  ranged?: boolean;
+  weight?: ArmorWeight;       // for armor: weight class
+  element?: Element;          // elemental weapon / damage type
+  attrBonus?: Partial<Attrs>; // stat-boosting gear
+  resist?: Partial<Record<Element, number>>;
   heal?: number;          // consumable hp
   restore?: number;       // consumable sp
+  curesStatus?: StatusEffect[]; // consumable cures these
+  charges?: number;       // wand / scroll charges
+  castSpell?: string;     // consumable that casts a spell
   desc: string;
 }
 
@@ -95,10 +138,17 @@ export interface MonsterDef {
   speed: number;
   xp: number;
   gold: [number, number];
+  gems?: [number, number];
   spellId?: string;       // monster may cast
-  resist?: Partial<Record<'fire' | 'cold' | 'shock' | 'holy', number>>;
+  inflicts?: { status: StatusEffect; chance: number; rounds: number }; // on melee hit
+  resist?: Partial<Record<Element, number>>;
+  family?: 'undead' | 'beast' | 'humanoid' | 'dragon' | 'demon' | 'elemental' | 'construct' | 'aberration';
+  ranged?: boolean;
   boss?: boolean;
+  size?: 'small' | 'normal' | 'large' | 'huge';
   color: string;
+  color2?: string;
+  sprite?: string;        // sprite kind for renderer
   desc: string;
 }
 
@@ -107,6 +157,9 @@ export interface Character {
   name: string;
   raceId: string;
   classId: string;
+  gender: Gender;
+  alignment: Alignment;
+  portraitId: number;     // index into portrait set for the race/gender
   level: number;
   xp: number;
   attrs: Attrs;
@@ -114,43 +167,67 @@ export interface Character {
   maxHp: number;
   sp: number;
   maxSp: number;
-  condition: 'ok' | 'unconscious' | 'dead';
+  ac?: number;            // cached, optional
+  condition: LifeState;
+  status: Partial<Record<StatusEffect, number>>;
   equipment: Partial<Record<EquipSlot, string>>; // item def ids
   spells: string[];
+  skills?: string[];      // thievery, etc (reserved)
   // transient combat flags
   blocking?: boolean;
   buffAtk?: number;
   buffAc?: number;
+  buffSpeed?: number;
 }
 
 // ----- Maps -----
-export type Terrain = '#' | '.' | '~' | '^' | 'T' | 'D' | 'S'; // wall, floor, water, mountain, tree, door-area, special
+// wall, floor, water, mountain, tree, door-area, special, grass, road, sand, lava, bridge
+export type Terrain = '#' | '.' | '~' | '^' | 'T' | 'D' | 'S' | 'g' | 'r' | 's' | 'L' | 'b';
 export interface TileMap {
   id: string;
   name: string;
   nameEn: string;
   kind: 'overworld' | 'dungeon';
   level?: number;
+  region?: string;
   grid: string[];
+  skyColor?: string;       // dungeon/overworld ambient tint
   // interactive cells keyed by "x,y"
   encounters?: Record<string, EncounterDef>;
   chests?: Record<string, ChestDef>;
   doors?: Record<string, DoorDef>;
   portals?: Record<string, Portal>;   // step here to travel
   npcs?: Record<string, string>;      // cell -> npc id (overworld/town markers)
+  signs?: Record<string, string>;     // cell -> message shown on step
+  events?: Record<string, MapEvent>;  // cell -> scripted event
   start?: { x: number; y: number; dir: Dir };
+}
+
+export interface MapEvent {
+  text?: string;
+  setFlag?: string;
+  onceFlag?: string;     // only fires if this flag not set; sets it after
+  giveItem?: string;
+  giveGold?: number;
+  damage?: [number, number]; // trap
+  healParty?: boolean;       // fountain / shrine
+  teachSpell?: string;
+  attrBoost?: { attr: AttrKey; amount: number }; // permanent stat shrine
 }
 
 export interface EncounterDef {
   monsters: { id: string; count: [number, number] }[];
   once?: boolean;
   boss?: boolean;
+  surprise?: boolean;
 }
 
 export interface ChestDef {
   gold?: [number, number];
+  gems?: [number, number];
   items?: string[];
   trapped?: boolean;
+  trapDmg?: [number, number];
 }
 
 export interface DoorDef {
@@ -165,6 +242,8 @@ export interface Portal {
   to: { x: number; y: number; dir?: Dir };
   label?: string;
   toScreen?: Screen;    // e.g. entering town
+  town?: string;        // town id when toScreen==='town'
+  needFlag?: string;    // gated portal
 }
 
 // ----- NPC / Dialog / Quests -----
@@ -178,6 +257,7 @@ export interface DialogCond {
   questComplete?: string;   // quest is complete
   questInactive?: string;   // quest not yet started
   cleared?: string;         // "mapId:x,y" encounter cleared
+  minGold?: number;
 }
 
 export interface DialogNode {
@@ -197,9 +277,13 @@ export interface DialogAction {
   setFlag?: string;
   giveItem?: string;
   giveGold?: number;
+  takeGold?: number;
+  giveGems?: number;
   teachSpell?: string;  // teach to first eligible caster
+  trainLevel?: boolean; // level up eligible members (trainer)
   openShop?: string;    // shop id
   heal?: boolean;       // temple/inn full heal
+  cure?: boolean;       // remove negative statuses
   end?: boolean;
 }
 export interface NPCEntry {
@@ -223,8 +307,11 @@ export interface QuestDef {
   hint?: string;
   giver?: string;       // npc id
   itemRequired?: string;// consumed on turn-in
+  clearedRequired?: string; // "mapId:x,y" must be cleared
   rewardGold: number;
   rewardXp: number;
+  rewardItem?: string;
+  main?: boolean;       // main-story quest
 }
 export type QuestState = 'inactive' | 'active' | 'complete';
 
@@ -233,9 +320,12 @@ export interface ShopDef {
   id: string;
   name: string;
   nameEn: string;
-  kind: 'goods' | 'magic' | 'temple' | 'inn';
+  kind: 'goods' | 'magic' | 'temple' | 'inn' | 'training' | 'tavern' | 'blacksmith';
+  town?: string;
   stock: string[];      // item ids sold
   spells?: string[];    // spell ids taught (magic guild)
+  restCost?: number;
+  healCost?: number;
 }
 
 // ----- Combat -----
@@ -244,6 +334,7 @@ export interface CombatMonster {
   defId: string;
   hp: number;
   maxHp: number;
+  status: Partial<Record<StatusEffect, number>>;
 }
 export interface Combat {
   monsters: CombatMonster[];
@@ -253,18 +344,42 @@ export interface Combat {
   cell: string;
   mapId: string;
   boss: boolean;
+  surprise?: boolean;
   awaitingTarget: null | { kind: 'attack' | 'spell'; spellId?: string };
+  fx?: CombatFx | null;     // last visual effect for renderer
+}
+
+export interface CombatFx {
+  kind: 'hit' | 'crit' | 'spell' | 'heal' | 'death' | 'miss';
+  targetSide: 'party' | 'monster';
+  targetIdx: number;
+  element?: Element;
+  amount?: number;
+  ttl: number;              // frames / ticks remaining (renderer animates)
 }
 
 // ----- Whole game state -----
+export interface CombatSummary {
+  xp: number;
+  gold: number;
+  gems: number;
+  drops: string[];
+  levelUps: string[];
+  boss: boolean;
+}
+
 export interface GameState {
+  version: number;
   screen: Screen;
   prevExplore: 'overworld' | 'dungeon';
   party: Character[];
   active: number;          // active character index for menus
   gold: number;
+  gems: number;
   food: number;
   day: number;
+  minutes: number;         // in-game clock
+  townId: string;          // current town
   backpack: string[];      // shared item ids
   pos: { mapId: string; x: number; y: number; dir: Dir };
   flags: Record<string, boolean>;
@@ -272,9 +387,13 @@ export interface GameState {
   clearedEncounters: string[]; // "mapId:x,y"
   lootedChests: string[];
   openedDoors: string[];
+  visitedMaps: string[];
   combat: Combat | null;
+  combatSummary: CombatSummary | null;
   dialog: { npcId: string; node: string } | null;
   shopId: string | null;
+  sign: string | null;     // transient sign/event text
   log: string[];
   messages: string[];      // transient toasts (top)
+  settings: { music: boolean; sound: boolean };
 }
