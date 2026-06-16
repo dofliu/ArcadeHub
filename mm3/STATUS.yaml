@@ -1,10 +1,10 @@
 name: mm3-isles-of-terra
 name_zh: 魔法門III — 泰拉群島
 category: personal_tools
-progress: 78
+progress: 82
 status: active
 last_updated: "2026-06-16"
-next_milestone: "更多區域與支線、角色肖像細化、地城裝飾物與寶箱動畫、成就/結局變化"
+next_milestone: "角色肖像細化、地城裝飾物與寶箱動畫、更多支線/成就、結局變化"
 technologies:
   - React
   - TypeScript
@@ -15,4 +15,4 @@ outputs:
   - tool
 description: "First-person dungeon RPG tribute to Might & Magic III: Isles of Terra"
 description_zh: "向《魔法門 III：泰拉群島》致敬的第一人稱地城 RPG，採 MM3 原版石雕邊框風格"
-key_metrics: "9 classes; 6-char party; 5 races; 32 spells; ~50 items; ~22 monsters; 7 maps across 3 towns; status effects; gems/food/rest; original chiptune + SFX; stone-frame UI w/ portraits, compass, automap; data-driven quests/dialog; 50+ headless sim checks"
+key_metrics: "9 classes; 6-char party; 5 races; 32 spells; ~58 items; 28 monsters; 8 maps across 4 towns (Sorpigal/Fountainhead/Baywatch/Wildabar) + 6 dungeons; status effects; gems/food/rest; original chiptune + SFX; stone-frame UI w/ portraits, compass, automap; biome combat backdrops; data-driven quests/dialog; 50+ sim checks + balance probe + critical-path integration test"
