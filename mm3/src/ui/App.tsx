@@ -8,7 +8,7 @@ import { soundService } from '../sound';
 import { Btn, Panel, PartyRoster } from './common';
 import { StoneFrame, CarvedPanel, Compass } from './frame';
 import {
-  CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen,
+  IntroScreen, CreateScreen, TownScreen, ShopScreen, DialogScreen, CombatPanel, SheetScreen, QuestLogScreen,
   RestScreen, SavesScreen, CombatSummaryScreen, TrainScreen, BestiaryScreen,
 } from './screens';
 import {
@@ -331,12 +331,13 @@ export const App: React.FC = () => {
                   一款向《Might &amp; Magic III: Isles of Terra》致敬的獨立第一人稱地城 RPG。組建六人隊伍、橫越泰拉群島、討伐遠古守護者。
                 </p>
                 <div className="flex gap-3">
-                  <Btn variant="primary" className="px-8 py-2" onClick={() => apply(d => { d.screen = 'create'; })}>新的冒險</Btn>
+                  <Btn variant="primary" className="px-8 py-2" onClick={() => apply(d => { d.screen = 'intro'; })}>新的冒險</Btn>
                   {E.hasSave() && <Btn variant="gold" className="px-6 py-2" onClick={() => { const s = E.loadGame(); if (s) setG(s); }}>繼續遊戲</Btn>}
                 </div>
               </div>
             </>
           )}
+          {g.screen === 'intro' && <IntroScreen apply={apply} />}
           {g.screen === 'create' && <CreateScreen apply={apply} />}
           {g.screen === 'shop' && <ShopScreen g={g} apply={apply} sfx={sfx} />}
           {g.screen === 'dialog' && <DialogScreen g={g} apply={apply} />}

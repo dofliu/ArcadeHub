@@ -2,6 +2,7 @@
 
 export type Screen =
   | 'title'
+  | 'intro'
   | 'create'
   | 'overworld'
   | 'dungeon'

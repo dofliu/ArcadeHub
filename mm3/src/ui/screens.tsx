@@ -45,6 +45,38 @@ const itemStat = (it: any): string => {
   return parts.join(' ');
 };
 
+// ============ Intro story ============
+const INTRO_BEATS: { title: string; text: string }[] = [
+  { title: '泰拉群島', text: '在無垠之海的彼端，漂浮著由古文明餘暉守護的「泰拉群島」。千百年來，島民在守護者寶珠的庇佑下安居樂業。' },
+  { title: '黑暗降臨', text: '然而，索皮加地城深處的巫妖王甦醒，奪走了「泰拉星界寶珠」。失去庇佑的群島，怪物橫行、暗潮洶湧。' },
+  { title: '英雄的召喚', text: '當守護者寶珠的力量逐漸消逝，傳說中的核心試煉——泰拉守護者，也開始躁動。群島的命運，需要一支無畏的隊伍。' },
+  { title: '你的旅程', text: '組建你的六人隊伍，橫越索皮加、泉源、灣望與荒野，討伐巫妖王、平息四方災厄，最終直面泰拉的核心。傳說，由此展開。' },
+];
+export const IntroScreen: React.FC<{ apply: Apply }> = ({ apply }) => {
+  const [page, setPage] = useState(0);
+  const last = page >= INTRO_BEATS.length - 1;
+  const beat = INTRO_BEATS[page];
+  return (
+    <div className="w-full max-w-xl flex flex-col items-center gap-4">
+      <Panel className="w-full text-center min-h-[200px] flex flex-col justify-center">
+        <div className="font-rune text-mm-gold text-2xl mb-3">{beat.title}</div>
+        <p className="text-mm-light/85 leading-relaxed text-[15px] px-2">{beat.text}</p>
+      </Panel>
+      <div className="flex items-center gap-2">
+        {INTRO_BEATS.map((_, i) => (
+          <span key={i} className={`w-2 h-2 rounded-full ${i === page ? 'bg-mm-gold' : 'bg-mm-edge'}`} />
+        ))}
+      </div>
+      <div className="flex gap-3">
+        <Btn onClick={() => apply(d => { d.screen = 'create'; })}>跳過</Btn>
+        {last
+          ? <Btn variant="primary" className="px-6" onClick={() => apply(d => { d.screen = 'create'; })}>組建隊伍 ▸</Btn>
+          : <Btn variant="gold" className="px-6" onClick={() => setPage(p => p + 1)}>繼續 ▸</Btn>}
+      </div>
+    </div>
+  );
+};
+
 // ============ Party Creation ============
 const RACE_IDS = RACES.map(r => r.id);
 const CLASS_IDS = CLASSES.map(c => c.id);
