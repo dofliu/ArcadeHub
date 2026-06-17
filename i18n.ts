@@ -65,6 +65,10 @@ const translations = {
     [GameType.SALAMANDER + '_desc']: '橫向捲軸射擊，吃道具強化火力擊倒魔王！',
     [GameType.MIGHTMAGIC]: '魔法門 III',
     [GameType.MIGHTMAGIC + '_desc']: '第一人稱迷宮 RPG，率隊探索、戰鬥、討伐巫妖王！',
+    [GameType.FIGHTING]: '格鬥之王',
+    [GameType.FIGHTING + '_desc']: '快打旋風式對戰格鬥，搓招出必殺，三戰兩勝！單人挑戰電腦或雙人對決。',
+    [GameType.SANGOKUSHI]: '三國志',
+    [GameType.SANGOKUSHI + '_desc']: '光榮風回合制戰略，群雄割據！經營城池、招攬名將、戰術攻城，一統天下。',
     // Specific Instructions
     snakeControls: '方向鍵控制移動',
     tetrisControls: '↑旋轉, ←→移動, ↓加速',
@@ -85,6 +89,8 @@ const translations = {
     adventureControls: '點擊按鈕或空白鍵擲骰子',
     salamanderControls: '方向鍵移動, 空白鍵射擊',
     mightMagicControls: '↑前進 ↓後退 ←→轉向, 戰鬥點按鈕或空白鍵攻擊',
+    fightingControls: 'P1: WASD 移動, F/G 拳, V/B 腳　｜　P2: 方向鍵, 逗號/句號 拳, 斜線/右Shift 腳　｜　ESC 暫停',
+    sangokushiControls: '點城池內政／出陣，選武將下指令；戰鬥點部隊移動、點敵人攻擊，可施火計。結束回合換下家。',
   },
   en: {
     appTitle: 'Arcade AI Hub',
@@ -149,6 +155,10 @@ const translations = {
     [GameType.SALAMANDER + '_desc']: 'Side-scrolling shooter: grab power-ups and down the boss!',
     [GameType.MIGHTMAGIC]: 'Might & Magic III',
     [GameType.MIGHTMAGIC + '_desc']: 'First-person dungeon RPG: lead a party and slay the Lich King!',
+    [GameType.FIGHTING]: 'King of Fighters',
+    [GameType.FIGHTING + '_desc']: 'Street Fighter-style versus brawler: motion specials, best of 3. Battle the CPU or a friend!',
+    [GameType.SANGOKUSHI]: 'Three Kingdoms',
+    [GameType.SANGOKUSHI + '_desc']: 'KOEI-style turn-based strategy: develop cities, recruit generals, lay tactical sieges and unify China.',
     // Specific Instructions
     snakeControls: 'Arrow keys to move',
     tetrisControls: '↑Rotate, ←→Move, ↓Drop',
@@ -169,6 +179,8 @@ const translations = {
     adventureControls: 'Click button or Space to roll dice',
     salamanderControls: 'Arrow keys to move, Space to shoot',
     mightMagicControls: '↑Forward ↓Back ←→Turn; in battle click or Space to attack',
+    fightingControls: 'P1: WASD move, F/G punch, V/B kick  |  P2: Arrows, Comma/Period punch, Slash/RShift kick  |  ESC pause',
+    sangokushiControls: 'Click a city to manage or march; pick an officer for commands. In battle click to move units and click foes to attack; use Fire. End turn to pass.',
   }
 };
 
